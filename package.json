@@ -1,0 +1,43 @@
+{
+  "name": "astro",
+  "private": true,
+  "version": "0.1.1",
+  "description": "Astro — a local-first, Obsidian-like knowledge graph app with a 3D graph view, desktop client, and MCP server.",
+  "license": "MIT",
+  "homepage": "https://www.solenai.app",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Solen-AI-org/Astro.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Solen-AI-org/Astro/issues"
+  },
+  "keywords": [
+    "knowledge-graph",
+    "obsidian",
+    "notes",
+    "local-first",
+    "electron",
+    "mcp"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "packageManager": "pnpm@10.33.0",
+  "scripts": {
+    "dev": "pnpm --filter @solen/web dev",
+    "build": "pnpm -r build",
+    "typecheck": "pnpm -r typecheck",
+    "test": "pnpm -r test",
+    "check:paths": "node scripts/check-no-personal-paths.mjs"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild"
+    ]
+  },
+  "dependencies": {
+    "@fontsource/inter": "^5.3.0",
+    "@fontsource/space-grotesk": "^5.3.0"
+  }
+}

@@ -1,0 +1,81 @@
+{
+  "name": "@solen/desktop",
+  "version": "0.1.1",
+  "private": true,
+  "license": "MIT",
+  "type": "module",
+  "main": "dist/main.js",
+  "scripts": {
+    "build": "tsc -p .",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "dev": "tsc -p . && electron .",
+    "start": "electron .",
+    "pack": "tsc -p . && electron-builder --dir",
+    "dist": "pnpm --filter @solen/core --filter @solen/plugin-api build && pnpm --filter @solen/web build && tsc -p . && electron-builder"
+  },
+  "dependencies": {
+    "@lydell/node-pty": "1.1.0",
+    "@solen/core": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "electron": "^33.0.0",
+    "electron-builder": "^26.15.3",
+    "typescript": "^5.7.3",
+    "vitest": "^3.0.5"
+  },
+  "build": {
+    "appId": "com.astro.zh.local",
+    "productName": "Astro 中文版",
+    "directories": {
+      "output": "release",
+      "buildResources": "build"
+    },
+    "files": [
+      "dist/**/*",
+      "package.json",
+      "!**/*.map"
+    ],
+    "extraResources": [
+      {
+        "from": "../web/dist",
+        "to": "web-dist"
+      },
+      {
+        "from": "build",
+        "to": "build"
+      }
+    ],
+    "mac": {
+      "icon": "build/icon.png",
+      "category": "public.app-category.productivity",
+      "target": [
+        "dmg"
+      ]
+    },
+    "win": {
+      "icon": "build/icon.png",
+      "target": [
+        "nsis"
+      ],
+      "signAndEditExecutable": false
+    },
+    "linux": {
+      "icon": "build/icon.png",
+      "target": [
+        "AppImage"
+      ],
+      "category": "Office"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "installerLanguages": [
+        "zh_CN"
+      ],
+      "language": "2052",
+      "artifactName": "Astro-Chinese-Setup-${version}.${ext}"
+    }
+  }
+}

@@ -1,0 +1,40 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      # Build first, and not as a matter of taste. `@solen/core` and `@solen/plugin-api` are
+      # workspace packages whose runtime entry is `dist/index.js`, so anything that *executes*
+      # code importing them (vitest, in apps/desktop and packages/mcp-server) cannot resolve them
+      # on a fresh checkout until they have been built. This ran build last, which is why the
+      # first green-field CI run went red on a machine that, unlike a developer's, had no stale
+      # `dist/` lying around. Typecheck no longer needs this (those packages point `types` at
+      # their source, see docs/ARCHITECTURE.md), but the tests still do.
+      - run: pnpm -r build
+
+      - run: pnpm -r typecheck
+
+      - run: pnpm -r test
+
+      - run: pnpm check:paths

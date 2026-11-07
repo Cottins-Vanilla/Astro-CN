@@ -1,0 +1,2583 @@
+@import "tailwindcss";
+
+:root[data-theme="dark"] {
+  --color-bg: #0a0e16;
+  --color-bg-hi: #101724;
+  --color-bg-lo: #05070b;
+  --color-surface: #121826;
+  --color-surface-2: #171f30;
+  --color-border: #253048;
+  --color-text: #e6ebf4;
+  --color-muted: #8b96ad;
+  --color-accent: #4cc2ff;
+  --color-accent-contrast: #04121d;
+  /* "periwinkle" — a star-tint slot, not the UI primary. */
+  --color-accent-violet: #8fa8ff;
+  --color-accent-blue: #4cc2ff;
+  --color-accent-green: #3ecfa5;
+  --color-accent-amber: #e3b25c;
+  --color-accent-red: #ef6b78;
+  --canvas-dot: #28324a;
+  --overlay-backdrop: rgba(3, 6, 12, 0.72);
+  --star-dot: rgba(232, 244, 255, 0.7);
+  --star-dot-faint: rgba(190, 215, 255, 0.35);
+  --nebula-1: color-mix(in srgb, var(--color-accent) 6%, transparent);
+  --nebula-2: color-mix(in srgb, var(--color-accent-violet) 5%, transparent);
+  --space-deep: #030509;
+}
+
+:root[data-theme="light"] {
+  --color-bg: #f2f5f9;
+  --color-bg-hi: #fbfdff;
+  --color-bg-lo: #e3e9f1;
+  --color-surface: #ffffff;
+  --color-surface-2: #e9eff6;
+  --color-border: #d3dce8;
+  --color-text: #17202b;
+  --color-muted: #5c6a7e;
+  --color-accent: #0a74b0;
+  --color-accent-contrast: #ffffff;
+  /* "periwinkle" — a star-tint slot, not the UI primary. */
+  --color-accent-violet: #5065cf;
+  --color-accent-blue: #0e7fc0;
+  --color-accent-green: #0f9d72;
+  --color-accent-amber: #b07f1d;
+  --color-accent-red: #cf4553;
+  --canvas-dot: #ccd7e5;
+  --overlay-backdrop: rgba(18, 28, 44, 0.35);
+  --star-dot: transparent;
+  --star-dot-faint: transparent;
+  --nebula-1: color-mix(in srgb, var(--color-accent) 4%, transparent);
+  --nebula-2: color-mix(in srgb, var(--color-accent-violet) 3%, transparent);
+  --space-deep: #dbe4f0;
+}
+
+:root {
+  --font-display: "Microsoft YaHei UI", "Microsoft YaHei", "PingFang SC", "Noto Sans CJK SC", "Inter", system-ui, sans-serif;
+  --font-body: "Microsoft YaHei UI", "Microsoft YaHei", "PingFang SC", "Noto Sans CJK SC", "Inter", sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+  --text-2xs: 10.5px;
+  --text-xs: 11.5px;
+  --text-sm: 12.5px;
+  --text-md: 14px;
+  --text-lg: 16px;
+  --text-xl: 20px;
+  /* Data-display only (plugin stat tiles) — larger than any chrome text. */
+  --text-2xl: 28px;
+  --tracking-display: 0.01em;
+  --tracking-caps: 0.08em;
+  /* Motion tokens — one Apple-style ease-out curve and one duration, reused by
+     every panel/overlay entrance and exit so the whole app moves as one system
+     (see docs/WORKSPACE-3D.md's "Motion"). The 150ms `ease` micro-interaction
+     transitions already sprinkled through this file stay as they are. */
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --dur-panel: 240ms;
+}
+
+/* ---------------------------------------------------------------------- */
+/* Panel + overlay motion (usePanelMount.ts drives the class toggle)       */
+/* Floating cards scale/slide in; overlays fade their scrim and pop the    */
+/* panel. `.panel-closed` is the start (entrance) and end (exit) state.     */
+/* ---------------------------------------------------------------------- */
+
+.floating-panel,
+.graph-settings-panel {
+  transition:
+    opacity var(--dur-panel) var(--ease-out),
+    transform var(--dur-panel) var(--ease-out);
+  will-change: opacity, transform;
+}
+
+.floating-panel.panel-closed,
+.graph-settings-panel.panel-closed {
+  opacity: 0;
+  transform: translateY(6px) scale(0.97);
+}
+
+.floating-panel.panel-open,
+.graph-settings-panel.panel-open {
+  opacity: 1;
+  transform: none;
+}
+
+.overlay-backdrop {
+  transition: opacity var(--dur-panel) var(--ease-out);
+}
+
+.overlay-backdrop.panel-closed {
+  opacity: 0;
+}
+
+.overlay-backdrop.panel-open {
+  opacity: 1;
+}
+
+.overlay-backdrop .palette-panel {
+  transition:
+    opacity var(--dur-panel) var(--ease-out),
+    transform var(--dur-panel) var(--ease-out);
+}
+
+.overlay-backdrop.panel-closed .palette-panel {
+  opacity: 0;
+  transform: translateY(-6px) scale(0.97);
+}
+
+.overlay-backdrop.panel-open .palette-panel {
+  opacity: 1;
+  transform: none;
+}
+
+/* Apple HIG: honor Reduce Motion — collapse every entrance/exit and
+   micro-interaction transition to an instant state change, keeping the app
+   fully usable without any of the above movement. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
+
+/* Keyboard-focus ring (docs/ARCH-APPEARANCE.md §3): targeted at interactive elements, not a
+   universal `:focus-visible` selector — the graph canvas and other non-interactive surfaces
+   never want an outline. Was absent before; both an accessibility fix and an Obsidian-like touch. */
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+[role="tab"]:focus-visible,
+.workspace-tab:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--color-accent) 70%, transparent);
+  outline-offset: 2px;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-body);
+  font-size: var(--text-md);
+}
+
+/* Scrollbars (docs/DESIGN.md's "Chrome"): the platform default paints an opaque light track with
+   stepper arrows that reads as a Windows dialog bolted onto a dark canvas. Every scrollable surface
+   here is a floating card, so the bar has to be chrome, not furniture — a thin pill riding on a
+   transparent track, tinted from the theme's own custom properties so it follows the accent
+   override too. The 4px transparent border plus `background-clip: padding-box` is what gives the
+   thumb its inset gutter: the element stays 12px wide (a comfortable hit target) while only 4px of
+   it paints, so the pill never crowds the text it scrolls. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--color-muted) 40%, transparent) transparent;
+}
+
+::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+
+::-webkit-scrollbar-track,
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--color-muted) 40%, transparent);
+  background-clip: padding-box;
+  border: 4px solid transparent;
+  border-radius: 999px;
+  transition: background-color 120ms ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: color-mix(in srgb, var(--color-accent) 55%, transparent);
+  background-clip: padding-box;
+}
+
+::-webkit-scrollbar-thumb:active {
+  background: color-mix(in srgb, var(--color-accent) 80%, transparent);
+  background-clip: padding-box;
+}
+
+/* Chromium still reserves the stepper boxes' space unless they're explicitly zeroed, which leaves
+   a dead gap at both ends of the track. */
+::-webkit-scrollbar-button {
+  display: none;
+}
+
+/* Rendered note-body markdown (AI panel messages). */
+.markdown-body {
+  line-height: 1.45;
+}
+
+.markdown-body > *:first-child {
+  margin-top: 0;
+}
+
+.markdown-body > *:last-child {
+  margin-bottom: 0;
+}
+
+.markdown-body h1,
+.markdown-body h2,
+.markdown-body h3 {
+  font-weight: 600;
+  color: var(--color-text);
+  margin: 0.5em 0 0.25em;
+}
+
+.markdown-body h1 {
+  font-size: 1.1em;
+}
+
+.markdown-body h2 {
+  font-size: 1.05em;
+}
+
+.markdown-body h3 {
+  font-size: 1em;
+}
+
+.markdown-body p {
+  margin: 0.35em 0;
+}
+
+.markdown-body ul,
+.markdown-body ol {
+  margin: 0.35em 0;
+  padding-left: 1.25em;
+}
+
+.markdown-body li {
+  margin: 0.15em 0;
+}
+
+.markdown-body code {
+  background: var(--color-surface-2);
+  border-radius: 0.25rem;
+  padding: 0.1em 0.35em;
+  font-size: 0.85em;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+.markdown-body pre {
+  background: var(--color-surface-2);
+  border-radius: 0.5rem;
+  padding: 0.5em 0.65em;
+  overflow-x: auto;
+  margin: 0.35em 0;
+}
+
+.markdown-body pre code {
+  background: none;
+  padding: 0;
+}
+
+.markdown-body a {
+  color: var(--color-accent);
+  text-decoration: underline;
+}
+
+.markdown-body blockquote {
+  border-left: 2px solid var(--color-border);
+  margin: 0.35em 0;
+  padding-left: 0.65em;
+  color: var(--color-muted);
+}
+
+.markdown-body .wiki-link {
+  color: var(--color-accent);
+  cursor: pointer;
+  border-bottom: 1px dotted var(--color-accent);
+}
+
+.markdown-body .wiki-link.ghost {
+  color: var(--color-muted);
+  border-bottom-style: dashed;
+}
+
+/* ---------------------------------------------------------------------- */
+/* Command palette + note picker (shared overlay chrome)                  */
+/* ---------------------------------------------------------------------- */
+
+.overlay-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: var(--overlay-backdrop);
+  backdrop-filter: blur(2px);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 14vh;
+}
+
+.palette-panel {
+  width: min(560px, 90vw);
+  max-height: 60vh;
+  display: flex;
+  flex-direction: column;
+  background: color-mix(in srgb, var(--color-surface) 96%, transparent);
+  border: 1px solid var(--color-border);
+  border-radius: 1rem;
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--color-accent) 15%, transparent),
+    0 24px 60px rgba(0, 0, 0, 0.4);
+  overflow: hidden;
+}
+
+.palette-input {
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-text);
+  font-size: var(--text-md);
+  padding: 0.85rem 1rem;
+  outline: none;
+}
+
+.palette-list {
+  overflow-y: auto;
+  padding: 0.4rem;
+}
+
+.palette-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  text-align: left;
+  padding: 0.5rem 0.6rem;
+  border-radius: 0.6rem;
+  color: var(--color-text);
+  font-size: var(--text-sm);
+  transition:
+    background 150ms ease,
+    color 150ms ease,
+    transform 150ms var(--ease-out);
+}
+
+.palette-item.active {
+  background: var(--color-accent);
+  color: var(--color-accent-contrast);
+}
+
+.palette-item:active {
+  transform: scale(0.97);
+}
+
+.palette-hint {
+  font-size: var(--text-xs);
+  color: inherit;
+  opacity: 0.65;
+}
+
+.palette-empty {
+  padding: 0.75rem 0.6rem;
+  color: var(--color-muted);
+  font-size: var(--text-sm);
+}
+
+/* ---------------------------------------------------------------------- */
+/* Editor connections strip                                                */
+/* ---------------------------------------------------------------------- */
+
+.link-toolbar-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-muted);
+  padding: 0.2rem;
+  border-radius: 0.4rem;
+  transition: color 150ms ease;
+}
+
+.link-toolbar-btn:hover {
+  color: var(--color-accent);
+  background: var(--color-surface-2);
+}
+
+.connections-strip {
+  border-top: 1px solid var(--color-border);
+  padding: 0.5rem 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.connections-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.connections-label {
+  font-family: var(--font-display);
+  font-size: var(--text-2xs);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-caps);
+  color: var(--color-muted);
+  margin-right: 0.15rem;
+}
+
+.search-group-label {
+  font-family: var(--font-display);
+  font-size: var(--text-2xs);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-caps);
+  color: var(--color-muted);
+}
+
+.search-snippet {
+  font-size: var(--text-2xs);
+  color: var(--color-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.search-snippet mark {
+  background: none;
+  color: var(--color-accent);
+  font-weight: 600;
+}
+
+.connection-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: var(--text-sm);
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  color: var(--color-text);
+  transition:
+    border-color 150ms ease,
+    color 150ms ease,
+    background 150ms ease,
+    transform 130ms var(--ease-out);
+}
+
+.connection-chip:hover {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
+
+.connection-chip:active {
+  transform: scale(0.96);
+}
+
+.connection-chip.ghost {
+  color: var(--color-muted);
+  border-style: dashed;
+}
+
+.connection-chip.connect {
+  color: var(--color-accent);
+  border-color: color-mix(in srgb, var(--color-accent) 40%, var(--color-border));
+  background: transparent;
+}
+
+.connection-chip:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.connection-chip:disabled:hover {
+  border-color: var(--color-border);
+  color: var(--color-text);
+}
+
+/* ---------------------------------------------------------------------- */
+/* 3D graph — the app's main surface (docs/WORKSPACE-3D.md)                */
+/* ---------------------------------------------------------------------- */
+
+.graph-main {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  /* Flat, uniform fill for Force mode — the WebGL layer clears to transparent so
+     this shows through instead of a flat renderer fill. Constellation Mode's space
+     backdrop (starfield + nebula) is layered on top via `.graph-main::before`,
+     gated to `[data-mode="constellation"]` below. */
+  background: var(--color-bg);
+}
+
+/* Constellation Mode's space backdrop — pure CSS, zero renderer cost. Two soft
+   nebula washes + a scatter of mismatched star-dot tiles + a deep-space
+   vignette, crossfaded in behind the WebGL canvas via `data-mode`. In the
+   light theme --star-dot(-faint) resolve to transparent, so this quietly
+   becomes just a pale paper-sky vignette instead. */
+.graph-main::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 900ms ease;
+  background-image:
+    radial-gradient(ellipse 90% 80% at 70% 20%, var(--nebula-1) 0%, transparent 100%),
+    radial-gradient(ellipse 85% 75% at 25% 75%, var(--nebula-2) 0%, transparent 100%),
+    radial-gradient(circle, var(--star-dot) 1px, transparent 1px),
+    radial-gradient(circle, var(--star-dot-faint) 1px, transparent 1px),
+    radial-gradient(circle, var(--star-dot) 1px, transparent 1px),
+    radial-gradient(circle, var(--star-dot-faint) 1px, transparent 1px),
+    radial-gradient(circle, var(--star-dot) 1px, transparent 1px),
+    radial-gradient(circle, var(--star-dot-faint) 1px, transparent 1px),
+    radial-gradient(ellipse 140% 120% at 50% 50%, transparent 40%, var(--space-deep) 100%);
+  background-repeat: no-repeat, no-repeat, repeat, repeat, repeat, repeat, repeat, repeat, no-repeat;
+  background-position:
+    0 0,
+    0 0,
+    20px 30px,
+    140px 90px,
+    60px 200px,
+    220px 40px,
+    170px 260px,
+    40px 150px,
+    0 0;
+  background-size:
+    100% 100%,
+    100% 100%,
+    260px 260px,
+    200px 200px,
+    340px 340px,
+    300px 300px,
+    220px 220px,
+    380px 380px,
+    100% 100%;
+}
+
+.graph-main[data-mode="constellation"]::before {
+  opacity: 1;
+}
+
+.graph-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  cursor: grab;
+}
+
+/* CPU-projected label overlay, drawn on top of the WebGL canvas each frame.
+   Never intercepts pointer events — the WebGL canvas underneath handles all
+   orbit/hover/click/drag input. */
+.graph-label-canvas {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.graph-loading {
+  position: absolute;
+  top: 1.25rem;
+  left: 1.25rem;
+  z-index: 2;
+  color: var(--color-muted);
+  font-size: var(--text-sm);
+}
+
+/* Top-center row of the graph panel: the Force/Constellation pill and, alongside it, the 2D/3D
+   pill (same visual language, see docs/WORKSPACE-3D.md's "2D / 3D"). */
+.graph-top-bar {
+  position: absolute;
+  top: 1rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 2;
+  display: flex;
+  gap: 0.5rem;
+}
+
+.graph-mode-toggle,
+.graph-dimension-toggle {
+  display: flex;
+  gap: 2px;
+  padding: 3px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--color-surface) 85%, transparent);
+  border: 1px solid var(--color-border);
+  backdrop-filter: blur(8px);
+}
+
+.graph-mode-btn {
+  padding: 0.35rem 0.9rem;
+  border-radius: 999px;
+  font-family: var(--font-display);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--color-muted);
+  transition:
+    background 150ms ease,
+    color 150ms ease,
+    transform 130ms var(--ease-out);
+}
+
+.graph-mode-btn:hover {
+  color: var(--color-text);
+}
+
+.graph-mode-btn:active {
+  transform: scale(0.94);
+}
+
+.graph-mode-btn.active {
+  background: var(--color-accent);
+  color: var(--color-accent-contrast);
+}
+
+/* Right-click (pin context) and edge-click (Unlink) popovers — plain DOM, positioned at the
+   cursor, per docs/WORKSPACE-3D.md ("the edge popover and note-title prompt are DOM, not GPU"). */
+.graph-popover {
+  position: fixed;
+  z-index: 45;
+  transform: translate(-8px, 8px);
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 160px;
+  padding: 0.35rem;
+  background: color-mix(in srgb, var(--color-surface) 94%, transparent);
+  border: 1px solid var(--color-border);
+  border-radius: 0.6rem;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(8px);
+}
+
+.graph-popover-title {
+  padding: 0.3rem 0.5rem;
+  max-width: 260px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--text-sm);
+  color: var(--color-muted);
+}
+
+.graph-popover-action {
+  text-align: left;
+  padding: 0.35rem 0.5rem;
+  border-radius: 0.4rem;
+  font-size: var(--text-sm);
+  color: var(--color-text);
+}
+
+.graph-popover-action:hover {
+  background: var(--color-surface-2);
+}
+
+.graph-popover-action.danger {
+  color: var(--color-accent-red);
+}
+
+/* ---------------------------------------------------------------------- */
+/* Graph settings panel (GraphSettingsPanel.tsx) — floating, top-right      */
+/* over the graph. Reuses .dock-panel-header, .settings-field,             */
+/* .settings-toggle (see the Settings modal below) for its inputs/toggles; */
+/* the collapsible sections and sliders below are new to this panel.       */
+/* ---------------------------------------------------------------------- */
+
+.graph-settings-panel {
+  position: absolute;
+  top: 1rem;
+  /* Left, not right — the right edge is the floating dock's territory
+     (.floating-dock, below) now that Editor/AI/Plugin float over the graph
+     instead of docking beside it; anchoring both panels to the same corner
+     would stack them on top of each other. */
+  left: 1rem;
+  z-index: 3;
+  width: min(280px, calc(100% - 2rem));
+  max-height: calc(100% - 2rem);
+  display: flex;
+  flex-direction: column;
+  background: color-mix(in srgb, var(--color-surface) 94%, transparent);
+  border: 1px solid var(--color-border);
+  border-radius: 0.75rem;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(8px);
+  overflow: hidden;
+}
+
+.graph-settings-close {
+  color: var(--color-muted);
+  font-size: var(--text-lg);
+  line-height: 1;
+  padding: 0.2rem 0.4rem;
+}
+
+.graph-settings-close:hover {
+  color: var(--color-text);
+}
+
+.graph-settings-body {
+  overflow-y: auto;
+  padding: 0.25rem 0.75rem 0.75rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.graph-settings-section + .graph-settings-section {
+  border-top: 1px solid var(--color-border);
+}
+
+.graph-settings-section summary {
+  padding: 0.65rem 0.1rem;
+  font-family: var(--font-display);
+  font-size: var(--text-2xs);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-caps);
+  color: var(--color-muted);
+  cursor: pointer;
+  list-style: none;
+}
+
+.graph-settings-section summary::-webkit-details-marker {
+  display: none;
+}
+
+.graph-settings-section summary::before {
+  content: "▸";
+  display: inline-block;
+  width: 1em;
+  color: var(--color-muted);
+  transition: transform 150ms ease;
+}
+
+.graph-settings-section[open] summary::before {
+  transform: rotate(90deg);
+}
+
+.graph-settings-section summary:hover {
+  color: var(--color-text);
+}
+
+.graph-settings-section-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  padding: 0.1rem 0.1rem 0.85rem;
+}
+
+.graph-settings-slider-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.graph-settings-slider-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: var(--text-xs);
+  color: var(--color-muted);
+}
+
+.graph-settings-slider-value {
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  color: var(--color-text);
+}
+
+/* Custom range-input styling — thin track, round thumb, accent-colored, matching the palette's
+   pill/chip visual language. Repeated per-vendor-prefix since there's no unprefixed shorthand for
+   track/thumb styling. */
+.graph-settings-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 4px;
+  border-radius: 999px;
+  background: var(--color-border);
+  outline: none;
+}
+
+.graph-settings-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  background: var(--color-accent);
+  border: 2px solid var(--color-surface);
+  box-shadow: 0 0 0 1px var(--color-accent);
+  cursor: pointer;
+}
+
+.graph-settings-slider::-moz-range-thumb {
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: var(--color-accent);
+  border: 2px solid var(--color-surface);
+  box-shadow: 0 0 0 1px var(--color-accent);
+  cursor: pointer;
+}
+
+.graph-settings-slider::-moz-range-track {
+  height: 4px;
+  border-radius: 999px;
+  background: var(--color-border);
+}
+
+/* ---------------------------------------------------------------------- */
+/* Floating dock — Editor/AI/Plugin panels (App.tsx's .workbench-main)     */
+/* float over the graph as their own rounded, shadowed cards instead of    */
+/* docking edge-to-edge and squeezing it, the same floating language       */
+/* Graph settings (.graph-settings-panel, above) already uses.             */
+/* ---------------------------------------------------------------------- */
+
+.workbench-main {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Full-width Obsidian-style strip on top of .workbench-main, above the graph/web/newtab content
+   area — see docs/ARCH-TAB-WORKSPACE.md §2, §9. `nodrag` (on .tab-strip itself, applied via the
+   component's className) reserves the native title-bar drag region, same as the old toolbar did. */
+.tab-strip {
+  display: flex;
+  align-items: center;
+  height: 36px;
+  min-height: 36px;
+  gap: 2px;
+  padding: 0 0 0 0.4rem;
+  border-bottom: 1px solid var(--color-border);
+  background: color-mix(in srgb, var(--color-surface) 92%, transparent);
+}
+
+/* Fills the gap between the last tab and the window controls, and is the only draggable part of
+   the strip — everything else in here is a button, and a drag region swallows clicks. */
+.tab-strip-spacer {
+  flex: 1;
+  align-self: stretch;
+  -webkit-app-region: drag;
+}
+
+/* Minimize / maximize / close (WindowControls.tsx). Ordinary DOM, not Electron's native overlay —
+   see that file for why. Sized to the Windows convention (46×32) so the hit targets land where
+   muscle memory expects, including the screen corner when maximized. */
+.window-controls {
+  display: flex;
+  align-self: stretch;
+  flex-shrink: 0;
+  -webkit-app-region: no-drag;
+}
+
+.window-control {
+  width: 46px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-muted);
+  transition:
+    background 120ms ease,
+    color 120ms ease;
+}
+
+.window-control:hover {
+  background: var(--color-surface-2);
+  color: var(--color-text);
+}
+
+/* The one control the OS itself colors, in both themes — closing is the destructive one, and a
+   window whose close button looks like the other two is a window people mis-click. */
+.window-control.close:hover {
+  background: #c42b1c;
+  color: #ffffff;
+}
+
+.workspace-tab {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  max-width: 160px;
+  height: 28px;
+  padding: 0 0.5rem;
+  border-radius: 0.5rem;
+  font-size: var(--text-xs);
+  color: var(--color-muted);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition:
+    background 150ms ease,
+    color 150ms ease;
+}
+
+.workspace-tab.active {
+  background: var(--color-surface-2);
+  color: var(--color-text);
+}
+
+/* Accent underline animates in via scaleX instead of an instant inset box-shadow
+   (docs/ARCH-APPEARANCE.md §3), so switching tabs reads as a transition, not a snap. */
+.workspace-tab::after {
+  content: "";
+  position: absolute;
+  left: 0.5rem;
+  right: 0.5rem;
+  bottom: 0;
+  height: 2px;
+  background: var(--color-accent);
+  transform: scaleX(0);
+  transition: transform 150ms var(--ease-out);
+}
+
+.workspace-tab.active::after {
+  transform: scaleX(1);
+}
+
+.workspace-tab-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.workspace-tab-close {
+  flex-shrink: 0;
+  line-height: 1;
+  opacity: 0.6;
+}
+
+.workspace-tab-close:hover {
+  opacity: 1;
+}
+
+.tab-strip-add {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  border-radius: 0.4rem;
+  color: var(--color-muted);
+}
+
+.tab-strip-add:hover {
+  color: var(--color-text);
+  background: var(--color-surface-2);
+}
+
+.tab-strip-menu-wrap {
+  position: relative;
+}
+
+.tab-strip-menu {
+  position: absolute;
+  top: 100%;
+  /* Anchored left, not right: the tab strip lives at the top-*left* of the window, so a menu
+     growing leftward from the chevron runs straight off the edge of the screen and clips its own
+     labels. `max-width` keeps it inside the viewport if the strip ever scrolls far to the right. */
+  left: 0;
+  max-width: calc(100vw - 1rem);
+  z-index: 5;
+  min-width: 180px;
+  max-height: 60vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  background: color-mix(in srgb, var(--color-surface) 96%, transparent);
+  border: 1px solid var(--color-border);
+  border-radius: 0.5rem;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(8px);
+}
+
+/* The graph/web/newtab content area beneath the strip — see §2. The graph fills it via
+   `.graph-main`'s own `flex:1` (this is a flex container too, so that keeps working unchanged);
+   `.workspace-viewport` and `.newtab-page` overlay it absolutely when active. */
+.workbench-content {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+}
+
+.newtab-page {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1.25rem;
+  background: var(--color-bg);
+}
+
+/* Obsidian-style new-tab actions: plain centered text links, not button chrome. */
+.newtab-action {
+  background: none;
+  color: var(--color-accent);
+  font-size: var(--text-md);
+  padding: 0.4rem 0.75rem;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  transition: color 150ms ease;
+}
+
+.newtab-action:hover {
+  text-decoration: underline;
+}
+
+.floating-dock {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  bottom: 1rem;
+  z-index: 4;
+  display: flex;
+  align-items: stretch;
+  gap: 0.75rem;
+  /* Lets clicks in the (usually nonexistent, but possible at odd aspect
+     ratios) empty space around the cards fall through to the graph
+     underneath; each .floating-panel re-enables it for itself below. */
+  pointer-events: none;
+}
+
+.floating-panel {
+  pointer-events: auto;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  background: color-mix(in srgb, var(--color-surface) 94%, transparent);
+  border: 1px solid var(--color-border);
+  border-radius: 0.75rem;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(8px);
+  overflow: hidden;
+}
+
+/* Percentage widths would resolve against .floating-dock's own (content-fit,
+   "width: auto") box rather than the viewport, so these use vw instead —
+   same ballpark as the old docked layout's w-[40%]/380px/320px, capped so a
+   note or two open together never crowds out the graph entirely. */
+.floating-panel.editor-panel {
+  width: min(42vw, 640px);
+}
+
+/* "Readable line length" (Settings → Editor, SettingsModal.tsx) — caps and centers the
+   CodeMirror content column instead of letting lines run the full panel width. */
+.editor-readable-width .cm-content {
+  max-width: 700px;
+  margin: 0 auto;
+}
+
+.floating-panel.ai-panel {
+  width: min(32vw, 380px);
+  flex-shrink: 0;
+}
+
+.floating-panel.plugin-panel {
+  /* 320px could not fit the "Plugins" label plus three tabs, so the tab row was always scrolled. */
+  width: min(30vw, 400px);
+  flex-shrink: 0;
+}
+
+.floating-panel.terminal-panel {
+  width: min(42vw, 640px);
+  flex-shrink: 0;
+}
+
+.terminal-host {
+  flex: 1;
+  min-height: 0;
+  padding: 0.5rem;
+}
+
+.browser-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  height: 40px;
+  min-height: 40px;
+  padding: 0 0.4rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.browser-nav-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 0.45rem;
+  color: var(--color-muted);
+  flex-shrink: 0;
+  transition:
+    color 150ms ease,
+    background 150ms ease,
+    transform 120ms var(--ease-out);
+}
+
+.browser-nav-btn:hover:not(:disabled) {
+  color: var(--color-text);
+  background: var(--color-surface-2);
+}
+
+.browser-nav-btn:active:not(:disabled) {
+  transform: scale(0.9);
+}
+
+.browser-nav-btn:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.browser-address {
+  flex: 1;
+  min-width: 0;
+  height: 28px;
+  border-radius: 999px;
+  border: 1px solid var(--color-border);
+  background: var(--color-bg);
+  color: var(--color-text);
+  padding: 0 0.7rem;
+  font-size: var(--text-xs);
+  font-family: var(--font-mono);
+  outline: none;
+  transition: border-color 150ms ease;
+}
+
+.browser-address:focus {
+  border-color: var(--color-accent);
+}
+
+.browser-viewport,
+.workspace-viewport {
+  flex: 1;
+  min-height: 0;
+  position: relative;
+  background: #fff;
+}
+
+/* Fills .workbench-content absolutely, overlaying the graph mounted behind it — see
+   docs/ARCH-TAB-WORKSPACE.md §3. */
+.workspace-viewport {
+  position: absolute;
+  inset: 0;
+}
+
+/* Indeterminate loading progress — Electron's WebContents API has no numeric load-progress
+   figure to bind to, so this sweeps continuously while `loading` is true rather than tracking
+   real percentage. */
+.browser-progress {
+  height: 2px;
+  background: transparent;
+  overflow: hidden;
+}
+
+.browser-progress.loading {
+  background: color-mix(in srgb, var(--color-accent) 20%, transparent);
+  position: relative;
+}
+
+.browser-progress.loading::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  width: 40%;
+  background: var(--color-accent);
+  animation: browser-progress-sweep 1.1s ease-in-out infinite;
+}
+
+@keyframes browser-progress-sweep {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(350%);
+  }
+}
+
+.browser-error {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  background: var(--color-surface);
+  color: var(--color-muted);
+  font-size: var(--text-sm);
+  text-align: center;
+  padding: 1rem;
+}
+
+/* Word Count reference plugin (wordcount.ts) — the only plugin styling that ships in core, since
+   third-party plugins render into their own unstyled element. Number-over-label stat tiles instead
+   of the bare inline text a plugin's plain DOM append would otherwise produce. */
+.wordcount-panel {
+  /* The drawer is full-height (.floating-dock stretches it); auto-height content left the four
+     stats as a small block pinned to the top with dead space under it. */
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.wordcount-grid {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-auto-rows: minmax(5rem, 1fr);
+  gap: 0.6rem;
+}
+
+.wordcount-stat {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.3rem;
+  padding: 0.9rem 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: 0.65rem;
+  background: color-mix(in srgb, var(--color-surface-2) 60%, transparent);
+}
+
+.wordcount-value {
+  /* Body font, not display: Space Grotesk's flagged "1" reads as an "l" at this size, so "159"
+     came out as "l59". `tabular-nums` keeps the four tiles' digits on the same rhythm. */
+  font-family: var(--font-body);
+  font-variant-numeric: tabular-nums lining-nums;
+  font-size: var(--text-2xl);
+  font-weight: 600;
+  line-height: 1.1;
+  color: var(--color-text);
+}
+
+.wordcount-label {
+  font-size: var(--text-2xs);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-caps);
+  color: var(--color-muted);
+}
+
+/* Daily Note built-in plugin (dailyNote.ts). */
+.daily-note-panel {
+  padding: 1.25rem 1rem;
+}
+
+.daily-note-empty {
+  color: var(--color-muted);
+  font-size: var(--text-sm);
+}
+
+.daily-note-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.daily-note-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--color-border);
+  font-size: var(--text-sm);
+  cursor: pointer;
+}
+
+.daily-note-date {
+  color: var(--color-text);
+  font-family: var(--font-display);
+}
+
+.daily-note-words {
+  color: var(--color-muted);
+}
+
+/* Vault Doctor built-in plugin (vaultDoctor.ts). */
+.vault-doctor-panel {
+  padding: 1.25rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.vault-doctor-heading {
+  font-size: var(--text-xs);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-caps);
+  color: var(--color-muted);
+  margin: 0 0 0.4rem;
+}
+
+.vault-doctor-empty {
+  color: var(--color-muted);
+  font-size: var(--text-sm);
+  margin: 0;
+}
+
+.vault-doctor-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  font-size: var(--text-sm);
+  color: var(--color-text);
+}
+
+.vault-doctor-link {
+  cursor: pointer;
+}
+
+/* ---------------------------------------------------------------------- */
+/* Shared dock-panel header (NoteEditor, AIPanel, PluginDrawer, Settings)  */
+/* ---------------------------------------------------------------------- */
+
+.plugin-panel-empty {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 1.5rem 1rem;
+  text-align: center;
+  color: var(--color-muted);
+  font-size: var(--text-sm);
+}
+
+/* Plugin panel tabs inside .dock-panel-header. A one-line tab row is not a scroll region: the
+   global styled scrollbar rendered a full 12px bar with arrows under three tabs. Wheel and drag
+   still scroll it; only the bar is hidden, and a fade marks the cut edge instead. */
+.plugin-tab-strip {
+  display: flex;
+  gap: 0.15rem;
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+  font-family: var(--font-body);
+  font-weight: 500;
+  text-transform: none;
+  letter-spacing: normal;
+  mask-image: linear-gradient(to right, transparent 0, #000 0.5rem, #000 calc(100% - 0.5rem), transparent 100%);
+}
+
+.plugin-tab-strip::-webkit-scrollbar {
+  display: none;
+}
+
+.plugin-tab {
+  flex-shrink: 0;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.4rem;
+  font-size: var(--text-xs);
+  white-space: nowrap;
+  color: var(--color-muted);
+  transition:
+    color 150ms ease,
+    background 150ms ease;
+}
+
+.plugin-tab:hover {
+  color: var(--color-text);
+  background: var(--color-surface-2);
+}
+
+.plugin-tab.active {
+  color: var(--color-text);
+  background: var(--color-surface-2);
+}
+
+.dock-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  height: 40px;
+  min-height: 40px;
+  padding: 0 0.75rem;
+  border-bottom: 1px solid var(--color-border);
+  font-family: var(--font-display);
+  font-size: var(--text-2xs);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-caps);
+  color: var(--color-muted);
+}
+
+/* ---------------------------------------------------------------------- */
+/* Ribbon — leftmost vertical icon rail (Ribbon.tsx)                       */
+/* ---------------------------------------------------------------------- */
+
+.ribbon {
+  width: 3rem;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.5rem 0;
+  background: var(--color-surface);
+  border-right: 1px solid var(--color-border);
+}
+
+.ribbon-logo {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-accent);
+  margin-bottom: 0.5rem;
+}
+
+.ribbon-btn {
+  position: relative;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.55rem;
+  color: var(--color-muted);
+  transition:
+    color 150ms ease,
+    background 150ms ease,
+    transform 130ms var(--ease-out);
+}
+
+.ribbon-btn:hover {
+  color: var(--color-text);
+  background: var(--color-surface-2);
+}
+
+.ribbon-btn:active {
+  transform: scale(0.88);
+}
+
+.ribbon-btn.active {
+  color: var(--color-accent);
+  background: color-mix(in srgb, var(--color-accent) 14%, transparent);
+}
+
+.ribbon-divider {
+  width: 20px;
+  height: 1px;
+  margin: 0.35rem 0;
+  background: var(--color-border);
+}
+
+.ribbon-spacer {
+  flex: 1;
+}
+
+/* CSS-only tooltip: any element with a `data-tip` attribute shows it in a
+   small pill to the right on hover/focus — no title attr, no JS. */
+[data-tip] {
+  position: relative;
+}
+
+[data-tip]::after {
+  content: attr(data-tip);
+  position: absolute;
+  left: calc(100% + 0.5rem);
+  top: 50%;
+  transform: translateY(-50%) translateX(-4px);
+  white-space: nowrap;
+  padding: 0.3rem 0.55rem;
+  border-radius: 0.4rem;
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  color: var(--color-text);
+  font-family: var(--font-display);
+  font-size: var(--text-xs);
+  font-weight: 500;
+  pointer-events: none;
+  opacity: 0;
+  transition:
+    opacity 120ms ease,
+    transform 120ms ease;
+  z-index: 50;
+}
+
+[data-tip]:hover::after,
+[data-tip]:focus-visible::after {
+  opacity: 1;
+  transform: translateY(-50%) translateX(0);
+}
+
+/* Left-anchored variant — for a `data-tip` element that sits right up against a
+   clipped edge (e.g. the sidebar's "+" button against `.sidebar`'s width-animation
+   `overflow: hidden`), so the pill opens into the open space instead of being cut off. */
+[data-tip][data-tip-left]::after {
+  left: auto;
+  right: calc(100% + 0.5rem);
+  transform: translateY(-50%) translateX(4px);
+}
+
+[data-tip][data-tip-left]:hover::after,
+[data-tip][data-tip-left]:focus-visible::after {
+  transform: translateY(-50%) translateX(0);
+}
+
+/* ---------------------------------------------------------------------- */
+/* Sidebar — collapsible notes explorer                                    */
+/* ---------------------------------------------------------------------- */
+
+.sidebar {
+  flex-shrink: 0;
+  overflow: hidden;
+  border-right: 1px solid var(--color-border);
+  background: var(--color-surface);
+  transition: width 200ms ease;
+}
+
+.sidebar.collapsed {
+  width: 0;
+  border-right-width: 0;
+}
+
+/* ---------------------------------------------------------------------- */
+/* Status bar — bottom-of-window strip (StatusBar.tsx)                    */
+/* ---------------------------------------------------------------------- */
+
+.status-bar {
+  height: 26px;
+  min-height: 26px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 0.75rem;
+  background: var(--color-surface);
+  border-top: 1px solid var(--color-border);
+  font-family: var(--font-display);
+  font-size: var(--text-2xs);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-caps);
+  color: var(--color-muted);
+}
+
+.status-bar-right {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.status-mode-btn {
+  color: var(--color-muted);
+  transition: color 150ms ease;
+}
+
+.status-mode-btn:hover {
+  color: var(--color-text);
+}
+
+.status-mode-btn.active {
+  color: var(--color-accent);
+}
+
+.status-badge {
+  padding: 0.1rem 0.4rem;
+  border-radius: 0.3rem;
+  border: 1px solid var(--color-border);
+}
+
+/* ---------------------------------------------------------------------- */
+/* AI panel — chat bubbles, insert/send buttons                            */
+/* ---------------------------------------------------------------------- */
+
+.ai-bubble {
+  max-width: 92%;
+  padding: 0.5rem 0.65rem;
+  border-radius: 0.7rem;
+  font-size: var(--text-md);
+  line-height: 1.45;
+}
+
+.ai-bubble.user {
+  align-self: flex-end;
+  background: color-mix(in srgb, var(--color-accent) 16%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-accent) 30%, transparent);
+  color: var(--color-text);
+}
+
+.ai-bubble.assistant {
+  align-self: flex-start;
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  color: var(--color-text);
+}
+
+.ai-error {
+  margin-top: 0.35rem;
+  color: var(--color-accent-red);
+  font-size: var(--text-xs);
+}
+
+.ai-insert-btn {
+  margin-top: 0.4rem;
+  font-size: var(--text-xs);
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  background: transparent;
+  border: 1px solid color-mix(in srgb, var(--color-accent) 40%, var(--color-border));
+  color: var(--color-accent);
+  transition:
+    border-color 150ms ease,
+    background 150ms ease,
+    transform 130ms var(--ease-out);
+}
+
+.ai-insert-btn:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--color-accent) 12%, transparent);
+}
+
+.ai-insert-btn:active:not(:disabled) {
+  transform: scale(0.96);
+}
+
+.ai-insert-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.ai-send-btn {
+  padding: 0.45rem 0.9rem;
+  border-radius: 0.6rem;
+  font-size: var(--text-sm);
+  font-weight: 500;
+  background: var(--color-accent);
+  color: var(--color-accent-contrast);
+  transition:
+    background 150ms ease,
+    opacity 150ms ease,
+    transform 130ms var(--ease-out);
+}
+
+.ai-send-btn:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--color-accent) 88%, white 0%);
+  opacity: 0.9;
+}
+
+.ai-send-btn:active:not(:disabled) {
+  transform: scale(0.96);
+}
+
+.ai-send-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.ai-send-btn.stop {
+  background: var(--color-accent-red);
+  color: var(--color-accent-contrast);
+}
+
+/* ---------------------------------------------------------------------- */
+/* Settings modal                                                          */
+/* ---------------------------------------------------------------------- */
+
+/* One fixed size for every section, not one that resizes to whatever the active section happens to
+   contain — switching from a two-row section to a nine-row one used to resize the whole dialog under
+   the cursor. The height is the Hotkeys list's (the tallest section), so nothing scrolls that didn't
+   have to before. */
+.settings-panel {
+  width: min(760px, 92vw);
+  height: min(540px, 82vh);
+  display: flex;
+  flex-direction: column;
+}
+
+/* Real modal header (was a bare `.settings-close` floating over the content) — the display-font
+   "Settings" wordmark, the active section's name, and the close button in one bar instead of a
+   `×` overlapping whatever the section happens to render underneath it. */
+.settings-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+  height: 44px;
+  min-height: 44px;
+  padding: 0 0.6rem 0 1rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.settings-header-title {
+  font-family: var(--font-display);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.settings-header-sep {
+  color: var(--color-border);
+  font-size: var(--text-sm);
+}
+
+.settings-header-section {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--font-display);
+  font-size: var(--text-sm);
+  color: var(--color-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Obsidian-style left-nav layout (docs/ARCH-APPEARANCE.md §1): a narrow section list on the
+   left, the active section's content scrolling independently on the right. Replaces the old
+   horizontal .settings-tabs strip. */
+.settings-shell {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+
+.settings-nav {
+  width: 160px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 0.75rem 0.5rem;
+  border-right: 1px solid var(--color-border);
+}
+
+.settings-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  text-align: left;
+  padding: 0.5rem 0.65rem;
+  border-radius: 0.5rem;
+  font-size: var(--text-sm);
+  color: var(--color-muted);
+  /* Transparent rail by default; the active item's turns accent-colored below instead of adding a
+     separate absolutely-positioned bar element. */
+  border-left: 2px solid transparent;
+  transition:
+    background 150ms ease,
+    color 150ms ease,
+    border-color 150ms ease,
+    transform 150ms var(--ease-out);
+}
+
+.settings-nav-item svg {
+  flex-shrink: 0;
+  transition: color 150ms ease;
+}
+
+.settings-nav-item:hover {
+  color: var(--color-text);
+}
+
+.settings-nav-item.active {
+  background: var(--color-surface-2);
+  color: var(--color-text);
+  border-left-color: var(--color-accent);
+}
+
+.settings-nav-item.active svg {
+  color: var(--color-accent);
+}
+
+.settings-nav-item:active {
+  transform: scale(0.97);
+}
+
+.settings-close {
+  flex-shrink: 0;
+  color: var(--color-muted);
+  font-size: var(--text-lg);
+  line-height: 1;
+  padding: 0.3rem 0.5rem;
+}
+
+.settings-close:hover {
+  color: var(--color-text);
+}
+
+.settings-body {
+  flex: 1;
+  min-width: 0;
+  padding: 1rem 1.1rem 1.25rem;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+/* Section primitive (item 3 of the settings redesign): an uppercase micro-label above a grouped
+   card, instead of every row floating loose on the body background. A tab with one obvious group
+   (Editor, Appearance, …) just uses one; Connections uses two (verified vs. manual setup). */
+.settings-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.settings-section-label {
+  font-family: var(--font-display);
+  font-size: var(--text-2xs);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-caps);
+  color: var(--color-muted);
+  padding: 0 0.1rem;
+}
+
+.settings-group {
+  display: flex;
+  flex-direction: column;
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: 0.65rem;
+  overflow: hidden;
+}
+
+.settings-group > .settings-row {
+  padding-left: 0.85rem;
+  padding-right: 0.85rem;
+}
+
+.settings-group > .settings-field {
+  padding: 0.6rem 0.85rem;
+}
+
+.settings-group > *:not(:last-child) {
+  border-bottom: 1px solid var(--color-border);
+}
+
+/* Appearance section rows (docs/ARCH-APPEARANCE.md §2): label + description left, control
+   right — the same settings-row look Obsidian uses. Density pass: shorter vertical padding than
+   the original loose-row layout now that rows live inside a bordered .settings-group card. */
+.settings-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.55rem 0;
+}
+
+.settings-row-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.settings-row-title {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: var(--text-sm);
+  color: var(--color-text);
+  font-weight: 500;
+}
+
+/* Filesystem path under a settings row. Always one line: the Claude Desktop config path is long
+   enough to wrap and get clipped mid-word, which read as a rendering bug. Mono so a path is
+   scannable, and the home directory is collapsed to `~` before it ever reaches here. */
+.settings-row-path {
+  display: block;
+  overflow: hidden;
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  color: color-mix(in srgb, var(--color-muted) 75%, transparent);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Small qualifier beside a row title (Connections: "not detected"). Advisory, so it reads as muted
+   metadata rather than an error. */
+.settings-row-tag {
+  padding: 0.05rem 0.35rem;
+  border: 1px solid var(--color-border);
+  border-radius: 0.3rem;
+  font-size: var(--text-2xs);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-caps);
+  color: var(--color-muted);
+}
+
+/* "stale entry" — still not an error (nothing is broken, the entry is just out of date), so it
+   borrows the accent rather than a red the rest of the app reserves for failures. */
+.settings-row-tag.warn {
+  border-color: color-mix(in srgb, var(--color-accent) 45%, transparent);
+  color: var(--color-accent);
+}
+
+.settings-row-desc {
+  font-size: var(--text-xs);
+  color: var(--color-muted);
+}
+
+/* Caps a row's description so a long string wraps under the title instead of shoving the
+   control off toward the row's right edge — only scoped to the info column, not every
+   .settings-row-desc (the AI tab's field help text and the font-size/zoom value labels want
+   their natural width). */
+.settings-row-info .settings-row-desc {
+  max-width: 340px;
+}
+
+.settings-row-control {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+  /* Pushes the control right even when it's the only child of `.settings-row` (the AI tab's Save
+     row has no title anymore) — a no-op when a `.settings-row-info` sibling exists, since
+     `justify-content: space-between` already puts the control at the same spot in that case. */
+  margin-left: auto;
+}
+
+.accent-swatches {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.accent-swatch {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  box-shadow: inset 0 0 0 1px var(--color-border);
+  transition:
+    transform 150ms var(--ease-out),
+    border-color 150ms ease;
+}
+
+.accent-swatch:hover {
+  transform: scale(1.1);
+}
+
+.accent-swatch:active {
+  transform: scale(0.97);
+}
+
+.accent-swatch.active {
+  border-color: var(--color-text);
+}
+
+.connection-chip.active {
+  color: var(--color-accent);
+  border-color: var(--color-accent);
+  background: color-mix(in srgb, var(--color-accent) 12%, transparent);
+}
+
+.settings-hint {
+  font-size: var(--text-xs);
+  color: var(--color-muted);
+  line-height: 1.5;
+  margin: 0;
+}
+
+.settings-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.settings-field > span {
+  font-family: var(--font-display);
+  font-size: var(--text-2xs);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-caps);
+  color: var(--color-muted);
+}
+
+/* A field's help text is a sibling of its caps label — opt it back out of the label styling above. */
+.settings-field > span.settings-row-desc {
+  font-family: inherit;
+  font-size: var(--text-xs);
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: normal;
+  line-height: 1.5;
+}
+
+.settings-field code {
+  font-family: var(--font-mono, monospace);
+  background: var(--color-surface-2);
+  border-radius: 0.25rem;
+  padding: 0 0.2rem;
+}
+
+/* Sign-in failures (Settings → Account) — the only place a settings action can fail out loud. */
+.settings-error {
+  font-size: var(--text-xs);
+  line-height: 1.5;
+  margin: 0;
+  color: var(--color-accent-red);
+}
+
+/* Selects that sit in a row's control slot (Web → Search engine) rather than in a .settings-field. */
+.settings-row-control select {
+  border-radius: 0.5rem;
+  border: 1px solid var(--color-border);
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-size: var(--text-sm);
+  padding: 0.35rem 0.5rem;
+}
+
+.settings-field input,
+.settings-field select {
+  border-radius: 0.5rem;
+  border: 1px solid var(--color-border);
+  background: var(--color-bg);
+  color: var(--color-text);
+  padding: 0.45rem 0.6rem;
+  font-size: var(--text-sm);
+  outline: none;
+  transition: border-color 150ms ease;
+}
+
+.settings-field input:focus,
+.settings-field select:focus {
+  border-color: var(--color-accent);
+}
+
+.settings-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: var(--text-xs);
+  color: var(--color-muted);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color 150ms ease;
+}
+
+.settings-toggle:hover {
+  color: var(--color-text);
+}
+
+/* Native checkboxes across the app (Graph settings toggles, AI context, plugin
+   enable) — tint them with the accent and give the tick a subtle press. */
+input[type="checkbox"] {
+  accent-color: var(--color-accent);
+  transition: transform 120ms var(--ease-out);
+}
+
+input[type="checkbox"]:active {
+  transform: scale(0.88);
+}
+
+/* Hotkeys tab keycaps (Keycaps component, SettingsModal.tsx) — mono, small, bordered, with a
+   subtle inset top/bottom highlight so they read as physical keys rather than plain boxes. Each
+   combo ("Ctrl+K") renders as one keycap per key, joined by .settings-keycap-plus. */
+.settings-keycap-row {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.settings-keycap-plus {
+  color: var(--color-muted);
+  font-size: var(--text-2xs);
+}
+
+.settings-keycap {
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  line-height: 1;
+  color: var(--color-text);
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 0.3rem;
+  padding: 0.2rem 0.4rem;
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, var(--color-bg-hi) 70%, transparent),
+    inset 0 -1px 0 color-mix(in srgb, var(--color-border) 70%, transparent);
+}
+
+.settings-plugin-empty {
+  padding: 0.75rem 0.6rem;
+  color: var(--color-muted);
+  font-size: var(--text-sm);
+}
+
+/* "Coming soon" badge (Account/Sync sections) — deliberately muted, not accent-colored, since
+   nothing behind it is actually connectable yet. */
+.settings-badge-soon {
+  font-family: var(--font-display);
+  font-size: var(--text-2xs);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-caps);
+  color: var(--color-muted);
+  padding: 0.15rem 0.4rem;
+  border-radius: 0.3rem;
+  border: 1px solid var(--color-border);
+}
+
+/* ---------------------------------------------------------------------- */
+/* Vault switcher — desktop-only multi-vault modal (VaultSwitcher.tsx)     */
+/* ---------------------------------------------------------------------- */
+
+.vault-switcher-panel {
+  width: min(480px, 92vw);
+  max-height: 70vh;
+}
+
+.vault-switcher-header {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.85rem 1rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.vault-switcher-header h2 {
+  flex: 1;
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: var(--text-md);
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.vault-switcher-actions {
+  display: flex;
+  gap: 0.5rem;
+  padding: 0.85rem 1rem 0.5rem;
+}
+
+.vault-switcher-actions .connection-chip {
+  flex: 1;
+  text-align: center;
+  padding: 0.45rem 0.6rem;
+}
+
+.vault-switcher-list {
+  overflow-y: auto;
+  padding: 0.4rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.vault-switcher-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  text-align: left;
+  padding: 0.55rem 0.7rem;
+  border-radius: 0.6rem;
+  color: var(--color-text);
+}
+
+.vault-switcher-item:hover:not(:disabled) {
+  background: var(--color-surface-2);
+}
+
+.vault-switcher-item.active {
+  background: color-mix(in srgb, var(--color-accent) 14%, transparent);
+}
+
+.vault-switcher-item:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.vault-switcher-item-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 0;
+}
+
+.vault-switcher-name {
+  font-size: var(--text-sm);
+  font-weight: 500;
+}
+
+.vault-switcher-path {
+  font-size: var(--text-xs);
+  color: var(--color-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.vault-switcher-current-badge {
+  flex-shrink: 0;
+  font-family: var(--font-display);
+  font-size: var(--text-2xs);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-caps);
+  color: var(--color-accent);
+  padding: 0.15rem 0.4rem;
+  border-radius: 0.3rem;
+  border: 1px solid color-mix(in srgb, var(--color-accent) 40%, var(--color-border));
+}
+
+/* A remembered vault whose folder is gone (or on an unplugged drive): still listed, so the user
+   can see what happened to it, but not clickable — opening it would have to invent it. */
+.vault-switcher-item.missing {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.vault-switcher-missing-badge {
+  flex-shrink: 0;
+  font-family: var(--font-display);
+  font-size: var(--text-2xs);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-caps);
+  color: var(--color-muted);
+  padding: 0.15rem 0.4rem;
+  border-radius: 0.3rem;
+  border: 1px solid var(--color-border);
+}
+
+.vault-switcher-error {
+  margin: 0 0 0.5rem;
+  font-size: var(--text-xs);
+  color: var(--color-accent-red);
+}
+
+/* Settings → Connections' unverified-client rows: the snippet grows taller than the Copy button
+   next to it, so unlike a plain .settings-row these align to the top instead of centering. */
+.settings-row--mcp-unverified {
+  align-items: flex-start;
+}
+
+.settings-mcp-snippet {
+  margin-top: 0.4rem;
+  padding: 0.5rem 0.6rem;
+  font-family: var(--font-mono, monospace);
+  font-size: var(--text-2xs);
+  color: var(--color-text);
+  background: color-mix(in srgb, var(--color-bg) 92%, var(--color-text) 8%);
+  border: 1px solid var(--color-border);
+  border-radius: 0.4rem;
+  overflow-x: auto;
+  white-space: pre;
+}
+
+/* Small icon button (Appearance → Interface zoom's reset) — same visual language as `.ribbon-btn`
+   but sized for an inline control next to a value readout rather than the 32px icon rail. */
+.settings-icon-btn {
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.4rem;
+  color: var(--color-muted);
+  transition:
+    color 150ms ease,
+    background 150ms ease;
+}
+
+.settings-icon-btn:hover:not(:disabled) {
+  color: var(--color-text);
+  background: var(--color-surface-2);
+}
+
+.settings-icon-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+/* Settings → About's Solen AI link list: a wrapped row of chips instead of one full-height
+   .settings-row per link (eight rows would be a lot of vertical space for "just a link"). */
+.settings-about-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+/* Settings → Editor's live sample. Stacks (label over surface) instead of the usual
+   info-left/control-right settings row. */
+.settings-editor-preview {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.4rem;
+}
+
+.editor-preview-surface {
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: 0.5rem;
+  background: var(--color-surface-2);
+  font-family: var(--font-body);
+  line-height: 1.6;
+  color: var(--color-text);
+  overflow: hidden;
+}
+
+/* Stand-in for the editor's `max-width: 700px; margin: 0 auto` on `.cm-content` — a ch-based cap,
+   since 700px could never bind inside a panel this narrow and the setting would look inert. */
+.editor-preview-surface.readable .editor-preview-text {
+  display: block;
+  max-width: 42ch;
+  margin: 0 auto;
+}
+
+.editor-preview-line {
+  display: flex;
+  gap: 0.6rem;
+  min-height: 1.6em;
+}
+
+.editor-preview-text {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Mirrors CodeMirror's gutter: fixed, right-aligned, muted, and out of the text's own flow. */
+.editor-preview-gutter {
+  flex-shrink: 0;
+  width: 1.4em;
+  text-align: right;
+  color: var(--color-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Chinese labels need natural spacing and enough room for wrapping. */
+.settings-row-info{min-width:0;flex:1}.settings-row-desc{line-height:1.7;overflow-wrap:anywhere}.settings-row-title{line-height:1.5}.settings-nav-item{white-space:nowrap}.connection-chip{white-space:normal;line-height:1.5}.settings-section-label,.dock-panel-header,.search-group-label{letter-spacing:normal;text-transform:none}
+.note-format-toolbar{display:flex;align-items:center;gap:.6rem;flex-wrap:wrap;padding:.5rem .75rem;border-bottom:1px solid var(--color-border);font-size:12px;flex-shrink:0}
+.note-format-toolbar label{display:flex;align-items:center;gap:.4rem;color:var(--color-muted)}
+.note-format-toolbar select,.note-format-toolbar button{background:var(--color-surface-2);border:1px solid var(--color-border);border-radius:5px;padding:4px 7px;color:var(--color-text)}
+.note-mode-buttons{display:flex;gap:3px}.note-mode-buttons button[aria-pressed=true]{background:var(--color-accent);color:var(--color-accent-contrast)}
+.note-preview{flex:1;min-height:0;overflow:auto;padding:1rem;user-select:text;line-height:1.8}
+.note-code-block{border:1px solid var(--color-border);border-radius:8px;overflow:hidden;margin:1rem 0}
+.note-code-header{display:flex;justify-content:space-between;align-items:center;padding:6px 10px;background:var(--color-surface-2);font-size:12px;color:var(--color-muted)}
+.note-code-header button{color:var(--color-accent)}
+.note-code-block .cm-content{font-family:Consolas,"Cascadia Code",monospace;max-width:none;margin:0;white-space:pre}
+.note-code-block .cm-scroller{overflow:auto}.note-code-block .cm-editor{height:auto!important;font-size:13px}
+
+/* Soft code colors: separate dark/light palettes, shared by editor and preview. */
+:root[data-theme="dark"] {
+  --code-bg: #151b27;
+  --code-text: #cbd5e1;
+  --code-keyword: #b7a6dc;
+  --code-string: #a8c6a0;
+  --code-number: #d0ba94;
+  --code-comment: #929dad;
+  --code-function: #9fbdd2;
+  --code-type: #9fbdb5;
+  --code-operator: #b9c2cf;
+}
+:root[data-theme="light"] {
+  --code-bg: #f4f6fa;
+  --code-text: #344054;
+  --code-keyword: #735899;
+  --code-string: #467146;
+  --code-number: #805d32;
+  --code-comment: #607084;
+  --code-function: #3b698a;
+  --code-type: #3f746b;
+  --code-operator: #46556b;
+}
+.note-code-block .cm-editor,
+.note-code-block .cm-gutters {
+  background-color: var(--code-bg) !important;
+  color: var(--code-text);
+}
+.note-code-block .cm-gutters {
+  color: var(--code-comment);
+  border-right-color: var(--color-border);
+}
+.note-code-block .cm-content { line-height: 1.75; }
+.note-code-header { background: var(--code-bg); color: var(--code-comment); }
+.note-code-header button { color: var(--code-function); }
+
+
+/* Language badge replaces Markdown fence syntax while the stored text stays intact. */
+.cm-code-language-label {
+  margin: .3rem .75rem .15rem;
+  color: var(--code-comment);
+  font: 11px/1.5 var(--font-body);
+  user-select: none;
+  opacity: .85;
+}
+
+/* Sidebar folder tree and note movement controls. */
+.sidebar-header-actions{display:flex;align-items:center;gap:8px;color:var(--color-muted)}
+.sidebar-header-actions button{display:flex;align-items:center;justify-content:center;min-width:22px;min-height:24px;border-radius:4px}
+.sidebar-header-actions button:hover{color:var(--color-text);background:var(--color-surface-2)}
+.sidebar-folder-list{margin-bottom:8px}.sidebar-folder-row{display:flex;align-items:center}
+.sidebar-folder{display:flex;align-items:center;gap:5px;min-width:0;width:100%;text-align:left;padding:6px;border-radius:6px;font-size:12px;color:var(--color-muted)}
+.sidebar-folder span{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.sidebar-folder small{font-size:10px;opacity:.7}
+.sidebar-folder.active,.sidebar-folder:hover,.sidebar-note-row.active{color:var(--color-text);background:var(--color-surface-2)}
+.sidebar-folder.drop-target{outline:1px solid var(--color-accent);background:var(--color-surface-2)}
+.sidebar-folder-children{margin-left:12px;padding-left:4px;border-left:1px solid var(--color-border)}
+.sidebar-root{margin-top:6px;border-top:1px solid var(--color-border);border-radius:0}
+.sidebar-note-row{display:flex;align-items:center;border-radius:6px;min-width:0}
+.sidebar-note-open{display:flex;align-items:center;gap:6px;min-width:0;flex:1;text-align:left;padding:6px;font-size:12px;color:var(--color-muted)}
+.sidebar-note-open>span{min-width:0;flex:1}.sidebar-note-title{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sidebar-note-open small{display:block;font-size:10px;opacity:.7}.sidebar-note-open:hover{color:var(--color-text)}
+.sidebar-note-action{opacity:0;flex-shrink:0;padding:3px;color:var(--color-muted);font-size:13px}
+.sidebar-note-row:hover .sidebar-note-action,.sidebar-folder-row:hover .sidebar-note-action,.sidebar-note-row:focus-within .sidebar-note-action,.sidebar-folder-row:focus-within .sidebar-note-action{opacity:1}
+.sidebar-note-action:hover{color:var(--color-accent)}
+.sidebar-move-box,.sidebar-folder-form{padding:8px;margin:4px 0;border:1px solid var(--color-border);border-radius:6px;background:var(--color-bg);font-size:11px}
+.sidebar-move-box label{display:flex;flex-direction:column;gap:5px}.sidebar-move-box select,.sidebar-folder-form input{width:100%;padding:4px;border:1px solid var(--color-border);border-radius:4px;background:var(--color-surface);color:var(--color-text)}
+.sidebar-move-box>div,.sidebar-folder-form>div{display:flex;gap:10px;margin-top:6px}.sidebar-move-box button,.sidebar-folder-form button{padding:2px 4px;color:var(--color-accent)}
+.sidebar-empty{font-size:11px;line-height:1.6;padding:5px 8px;color:var(--color-muted)}.sidebar-error{font-size:11px;color:var(--color-accent-red);padding:4px;overflow-wrap:anywhere}
+.sidebar-search-match{width:100%;text-align:left;font-size:12px;padding:6px;color:var(--color-muted)}
+
+/* Clear entry points for folder and note management. */
+.sidebar-menu-trigger{opacity:.65;padding:5px;border-radius:4px}
+.sidebar-menu-trigger[aria-expanded=true]{opacity:1;background:var(--color-surface-2)}
+.sidebar-item-menu{display:flex;flex-direction:column;gap:2px;padding:5px;margin:3px 0 6px 8px;border:1px solid var(--color-border);border-radius:7px;background:var(--color-bg)}
+.sidebar-item-menu button{display:flex;align-items:center;gap:7px;width:100%;padding:6px 8px;border-radius:4px;font-size:11px;text-align:left;color:var(--color-text)}
+.sidebar-item-menu button:hover,.sidebar-item-menu button:focus-visible{background:var(--color-surface-2)}
+.sidebar-item-menu .danger{color:var(--color-accent-red)}
+.sidebar button:disabled{opacity:.45;cursor:wait}
+.sidebar-dialog-backdrop{position:fixed;inset:0;z-index:1000;display:flex;align-items:center;justify-content:center;padding:20px;background:var(--overlay-backdrop)}
+.sidebar-dialog{width:min(400px,100%);border:1px solid var(--color-border);border-radius:12px;padding:22px;background:var(--color-surface);color:var(--color-text);box-shadow:0 20px 65px #0004;font-size:13px}
+.sidebar-dialog h2{font-size:15px;font-weight:600;margin:0 0 18px}
+.sidebar-dialog-content{line-height:1.8;overflow-wrap:anywhere}
+.sidebar-dialog-hint{color:var(--color-muted);font-size:12px;margin:8px 0}
+.sidebar-name-label{display:flex;flex-direction:column;gap:6px;color:var(--color-muted);font-size:12px}
+.sidebar-name-label input{width:100%;padding:8px 10px;border:1px solid var(--color-border);border-radius:6px;background:var(--color-bg);color:var(--color-text);outline:none;font-size:13px}
+.sidebar-name-label input:focus{border-color:var(--color-accent)}
+.sidebar-delete-checkbox{display:flex;align-items:flex-start;gap:8px;margin-top:16px;font-size:12px}
+.sidebar-delete-checkbox input{margin-top:5px;accent-color:var(--color-accent-red)}
+.sidebar-dialog-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:22px}
+.sidebar-dialog-actions button{padding:7px 14px;border:1px solid var(--color-border);border-radius:6px;font-size:12px}
+.sidebar-dialog-actions .primary{background:var(--color-accent);border-color:var(--color-accent);color:var(--color-bg)}
+.sidebar-dialog-actions .danger{color:var(--color-accent-red);border-color:var(--color-accent-red)}
+.sidebar-dialog-actions button:disabled{opacity:.5;cursor:wait}
+
+
+.settings-deepseek-help{display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding:12px 16px;font-size:12px;line-height:1.7;color:var(--color-muted)}
+.settings-ai-actions{display:flex;flex-wrap:wrap;gap:8px}
+.settings-ai-result{font-size:12px;line-height:1.7;padding:10px 16px;color:var(--color-muted);overflow-wrap:anywhere}
+.settings-ai-result.success{color:var(--color-accent)}
+.settings-ai-result.error{color:var(--color-accent-red)}
+.ai-provider-settings{margin-left:auto;font-size:11px;color:var(--color-muted);padding:2px 6px;border-radius:4px}
+.ai-provider-settings:hover{color:var(--color-accent);background:var(--color-surface-2)}
+
+
+.settings-ai-body{padding:0;gap:0;overflow:hidden}
+.settings-ai-scroll{flex:1;min-height:0;overflow-y:auto;padding:1rem 1.1rem}
+.settings-ai-scroll>.settings-hint{margin-bottom:12px}
+.settings-ai-footer{flex-shrink:0;border-top:1px solid var(--color-border);padding:10px 16px;background:var(--color-surface)}
+.settings-ai-footer .settings-row{padding:0}
+.settings-ai-footer .settings-ai-result{padding:8px 0 0}
+
+
+/* A quieter, spacious navigation list, matching the reference sidebar. */
+.sidebar{width:272px;min-width:272px;transition:width 240ms ease,min-width 240ms ease,opacity 180ms ease}
+.sidebar.collapsed{width:0;min-width:0}
+.sidebar>div:first-child{padding:16px 10px}
+.sidebar-folder-list{margin:12px 0}
+.sidebar-folder-row,.sidebar-note-row{position:relative;min-height:40px;border-radius:9px;transition:background-color 160ms ease,color 160ms ease}
+.sidebar-folder-row:has(.sidebar-folder.active),.sidebar-folder-row:hover,.sidebar-note-row:hover{background:var(--color-surface-2)}
+.sidebar-folder{min-height:40px;padding:9px 11px;gap:11px;font-size:14px;font-weight:400;color:var(--color-text);border-radius:9px}
+.sidebar-folder.active,.sidebar-folder:hover{background:transparent}
+.sidebar-folder svg{flex-shrink:0}
+.sidebar-folder small{display:none}
+.sidebar-folder-children{margin-left:15px;padding-left:12px;border-left:none;padding-bottom:3px}
+.sidebar-folder-children .sidebar-folder,.sidebar-folder-children .sidebar-note-open{font-size:13px}
+.sidebar-note-open{min-height:38px;padding:9px 11px;gap:11px;font-size:14px;color:var(--color-text)}
+.sidebar-note-row.active{background:var(--color-surface-2)}
+.sidebar-menu-trigger{margin-right:7px;opacity:0;width:26px;height:28px;display:flex;align-items:center;justify-content:center;transition:opacity 140ms ease,background-color 140ms ease}
+.sidebar-menu-trigger[aria-expanded=true]{opacity:1}
+.sidebar-root{margin-top:16px;border:0;color:var(--color-muted);font-size:12px;min-height:32px}
+.sidebar-root svg{width:15px}
+.sidebar-empty{font-size:11px;padding:3px 11px 7px;opacity:.8}
+.sidebar-folder-list li,.sidebar-note-item{position:relative}
+.sidebar-item-menu{position:absolute;right:5px;top:38px;min-width:168px;margin:0;z-index:30;box-shadow:0 8px 24px #0002;animation:sidebar-menu-in 150ms ease-out}
+.sidebar-item-menu button{font-size:12px;padding:8px}
+.sidebar-disclosure{display:grid;grid-template-rows:0fr;opacity:0;transition:grid-template-rows 240ms cubic-bezier(.22,1,.36,1),opacity 180ms ease}
+.sidebar-disclosure.is-open{grid-template-rows:1fr;opacity:1}
+.sidebar-disclosure>div{min-height:0;overflow:hidden}
+.sidebar-disclosure[aria-hidden=true]{pointer-events:none}
+.sidebar-dialog-backdrop{animation:sidebar-fade-in 150ms ease-out}
+.sidebar-dialog,.sidebar-folder-form,.sidebar-move-box{animation:sidebar-menu-in 180ms ease-out}
+.note-format-toolbar button,.note-mode-buttons button{transition:background-color 150ms ease,color 150ms ease,transform 120ms ease}
+.note-format-toolbar button:active{transform:scale(.97)}
+@keyframes sidebar-menu-in{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}
+@keyframes sidebar-fade-in{from{opacity:0}to{opacity:1}}
+@media(prefers-reduced-motion:reduce){.sidebar,.sidebar-disclosure{transition:none}}
+
+.sidebar-disclosure.is-settled>div{overflow:visible}
+.note-preview{animation:sidebar-fade-in 160ms ease-out}.sidebar-item-menu{max-height:240px;overflow-y:auto}
+
+.ai-current-model{display:flex;flex-direction:column;gap:6px;text-align:left;margin:10px 12px;padding:10px 12px;border:1px solid var(--color-border);border-radius:9px;background:var(--color-surface-2);min-width:0;transition:border-color 160ms ease,background-color 160ms ease}
+.ai-current-model:hover{border-color:var(--color-accent)}
+.ai-model-heading{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:11px;color:var(--color-muted)}
+.ai-model-state{font-size:10px;border-radius:20px;padding:2px 7px;background:var(--color-bg)}
+.ai-model-state.ready{color:var(--color-accent)}
+.ai-model-name{font-size:13px;color:var(--color-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:500}
+.ai-model-details{display:flex;align-items:center;flex-wrap:wrap;gap:6px 12px;font-size:11px;color:var(--color-muted)}
+.ai-model-change{margin-left:auto;color:var(--color-accent)}
+.ai-reply-model{margin-top:8px;font-size:10px;line-height:1.6;color:var(--color-muted);overflow-wrap:anywhere}
+
+
+/* Markdown editing keeps the source editable while showing its visual hierarchy. */
+.note-markdown-toolbar{display:flex;flex-wrap:wrap;align-items:center;gap:4px;padding:7px 12px;border-bottom:1px solid var(--color-border);flex-shrink:0;font-size:12px}
+.note-markdown-toolbar button{padding:4px 7px;border-radius:5px;color:var(--color-text);transition:background-color 150ms ease}
+.note-markdown-toolbar button:hover{background:var(--color-surface-2)}
+.note-markdown-toolbar button:focus-visible{outline:2px solid var(--color-accent);outline-offset:1px}
+.note-markdown-toolbar span{font-size:11px;color:var(--color-muted);margin-left:auto}
+.editor-panel .cm-content{line-height:1.85;color:var(--color-text)}
+.editor-panel .cm-md-heading{font-weight:650;line-height:1.5;padding-top:.65em;padding-bottom:.3em;color:var(--color-text)}
+.editor-panel .cm-md-h1{font-size:1.8em}.editor-panel .cm-md-h2{font-size:1.5em}.editor-panel .cm-md-h3{font-size:1.25em}
+.editor-panel .cm-md-h4,.editor-panel .cm-md-h5,.editor-panel .cm-md-h6{font-size:1.1em}
+.editor-panel .cm-md-quote{border-left:3px solid var(--color-border);padding-left:12px;background:var(--color-surface-2);color:var(--color-muted)}
+.editor-panel .cm-md-mark{color:var(--color-muted);font-weight:400}
+.editor-panel .cm-md-code{background:var(--code-bg);color:var(--code-text);font-family:Consolas,"Cascadia Code",monospace;line-height:1.65}
+.editor-panel .cm-md-inline-code{background:var(--code-bg);color:var(--code-text);font-family:Consolas,"Cascadia Code",monospace;padding:2px 4px;border-radius:4px;font-size:.95em}
+.note-preview table{border-collapse:collapse;width:100%;margin:1em 0;font-size:.95em}
+.note-preview th,.note-preview td{border:1px solid var(--color-border);padding:8px 12px;text-align:left}
+.note-preview th{background:var(--color-surface-2);font-weight:600}
+.note-preview hr{border:0;border-top:1px solid var(--color-border);margin:1.5em 0}
+.note-preview h4,.note-preview h5,.note-preview h6{font-weight:600;margin:1.2em 0 .5em}
+.note-preview input[type=checkbox]{margin-right:.4em;accent-color:var(--color-accent)}
+.note-preview ul{list-style:disc;padding-left:1.5em}
+.note-preview ol{list-style:decimal;padding-left:1.5em}
+.note-preview li:has(>input[type=checkbox]){list-style:none}
+/* Sibling sorting uses a thin insertion line; the folder center remains a move target. */
+.sidebar-folder-row[data-drop-position=before]::before,.sidebar-note-row[data-drop-position=before]::before,
+.sidebar-folder-row[data-drop-position=after]::after,.sidebar-note-row[data-drop-position=after]::after{content:"";position:absolute;left:8px;right:8px;height:2px;background:var(--color-accent);border-radius:2px;pointer-events:none;z-index:3}
+.sidebar-folder-row[data-drop-position=before]::before,.sidebar-note-row[data-drop-position=before]::before{top:-1px}
+.sidebar-folder-row[data-drop-position=after]::after,.sidebar-note-row[data-drop-position=after]::after{bottom:-1px}
+.sidebar-folder-row[data-drop-position=inside]{background:color-mix(in srgb,var(--color-accent) 16%,transparent);outline:1px solid var(--color-accent)}
+.sidebar-folder-row[data-dragging],.sidebar-note-row[data-dragging]{opacity:.45}
+.sidebar-item-menu button:disabled{opacity:.4;cursor:default}
+.sidebar-root{border:1px dashed var(--color-border);border-radius:8px;opacity:.8}
+.sidebar-root.drop-target{opacity:1;border-color:var(--color-accent)}
+.cm-md-list-bullet{display:inline-block;min-width:1.3em;text-align:center;color:var(--color-muted);user-select:none}
+.cm-md-task{accent-color:var(--color-accent);vertical-align:middle;margin:0 .4em 0 .1em;cursor:pointer}
+.cm-md-rendered-table{padding:8px 0;overflow-x:auto;font-family:var(--font-body);font-size:var(--editor-font-size,14px)}
+.cm-md-rendered-table>button{display:block;margin-left:auto;color:var(--color-muted);font-size:11px;padding:3px 6px;border-radius:4px}
+.cm-md-rendered-table>button:hover{background:var(--color-surface-2);color:var(--color-text)}
+.cm-md-rendered-table table{border-collapse:collapse;width:100%;margin:4px 0}
+.cm-md-rendered-table th,.cm-md-rendered-table td{border:1px solid var(--color-border);padding:7px 10px;text-align:left;white-space:normal}
+.cm-md-rendered-table th{background:var(--color-surface-2);font-weight:600}
+.cm-md-rule{border:0;border-top:1px solid var(--color-border);margin:18px 0}
+.sidebar-name-label select{width:100%;margin-top:6px;padding:8px 10px;border:1px solid var(--color-border);border-radius:7px;background:var(--color-bg);color:var(--color-text);outline:none}
+.sidebar-name-label select:focus{border-color:var(--color-accent)}
+.graph-arrange-btn{pointer-events:auto;border:1px solid var(--color-border);background:var(--color-surface);color:var(--color-muted);border-radius:20px;padding:7px 12px;font-size:12px;transition:background-color 150ms ease,color 150ms ease}
+.graph-arrange-btn:hover{color:var(--color-text);background:var(--color-surface-2)}
+.graph-arrange-btn:focus-visible{outline:2px solid var(--color-accent);outline-offset:2px}

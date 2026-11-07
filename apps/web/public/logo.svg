@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-128 -128 256 256" role="img" aria-label="Astro">
+  <defs>
+    <linearGradient id="astroIce" x1="0" y1="-128" x2="0" y2="128" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#a7ddff"/>
+      <stop offset="0.55" stop-color="#4cc2ff"/>
+      <stop offset="1" stop-color="#1f9ede"/>
+    </linearGradient>
+    <filter id="astroGlow" x="-80%" y="-80%" width="260%" height="260%">
+      <feGaussianBlur stdDeviation="9" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  <g filter="url(#astroGlow)" fill="none" stroke="url(#astroIce)" stroke-width="15" stroke-linejoin="round" stroke-linecap="round">
+    <path d="M0,-120 C12,-38 38,-12 120,0 C38,12 12,38 0,120 C-12,38 -38,12 -120,0 C-38,-12 -12,-38 0,-120 Z"/>
+    <circle cx="0" cy="0" r="19"/>
+  </g>
+</svg>

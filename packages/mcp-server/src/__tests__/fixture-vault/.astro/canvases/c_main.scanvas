@@ -1,0 +1,13 @@
+{
+  "format": "scanvas",
+  "version": 1,
+  "id": "c_main",
+  "name": "Main",
+  "createdAt": "2026-01-01T00:00:00.000Z",
+  "updatedAt": "2026-01-01T00:00:00.000Z",
+  "nodes": [
+    { "id": "nd_1", "type": "note", "x": 0, "y": 0, "width": 280, "height": 180, "noteId": "n_alpha" },
+    { "id": "nd_2", "type": "note", "x": 400, "y": 0, "width": 280, "height": 180, "noteId": "n_beta" }
+  ],
+  "edges": [{ "id": "e_1", "from": "nd_1", "to": "nd_2", "label": "relates to" }]
+}

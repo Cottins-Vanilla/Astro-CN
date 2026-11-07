@@ -1,0 +1,26 @@
+node_modules/
+dist/
+build/
+.next/
+*.log
+.DS_Store
+.env
+.env.*
+coverage/
+*.tsbuildinfo
+attachs/
+astrofloatingpanels.bundle
+.claude/
+graphify-out/
+.verify-vault/
+
+# apps/desktop/build/ is electron-builder's buildResources dir (the "build"
+# field in apps/desktop/package.json) — source icon assets, not build
+# output, despite the name the blanket `build/` rule above targets.
+!apps/desktop/build/
+!apps/desktop/build/**
+
+# electron-builder's actual packaged-app output goes here (apps/desktop/dist/
+# is source-compiled main/preload JS, also build output — both stay ignored
+# by the blanket rules above).
+apps/desktop/release/
