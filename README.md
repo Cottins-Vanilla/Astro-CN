@@ -1,208 +1,133 @@
 <div align="center">
 
-# Astro
+# Astro CN · 中文增强版
 
-**A knowledge-graph workspace where every note is a star in a real, directly-editable 3D graph.**
+**把知识点、代码经验和错题，整理成自己的知识星图。**
 
-[![CI](https://github.com/Solen-AI-org/Astro/actions/workflows/ci.yml/badge.svg)](https://github.com/Solen-AI-org/Astro/actions/workflows/ci.yml)
-[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Windows x64](https://img.shields.io/badge/Windows-x64-0078D6.svg)](https://github.com/Cottins-Vanilla/Astro-CN/releases)
+[![社区修改版](https://img.shields.io/badge/Astro-社区中文增强版-7957d5.svg)](docs/UPSTREAM.md)
 
-[**Download for Windows**](https://github.com/Solen-AI-org/Astro/releases/latest) · [Build from source](#quick-start)
-
-![The Astro desktop app: a vault opens as a 3D star graph, a note opens in a floating editor over it, then Constellation Mode re-lays the same graph onto real IAU constellation figures](docs/assets/demo.gif)
-
-*Recorded from the desktop build. No mockups: the vault, the graph, the constellations and the note are all real.*
+[下载安装包](https://github.com/Cottins-Vanilla/Astro-CN/releases/latest) · [使用指南](docs/USER-GUIDE.zh-CN.md) · [开发构建](docs/DEVELOPMENT.zh-CN.md) · [更新日志](CHANGELOG.md) · [反馈问题](https://github.com/Cottins-Vanilla/Astro-CN/issues)
 
 </div>
 
-Astro is for anyone who thinks in networks of ideas — research, project
-notes, a personal wiki — and wants them stored as plain files on their own
-machine instead of inside a service. There's no document list with a canvas
-bolted on the side: the 3D graph *is* the workspace. Click a star to open the
-note, drag it to move it, hold Shift and drag between two stars to link them.
+> 本项目基于 [Solen AI 的 Astro](https://github.com/Solen-AI-org/Astro) v0.1.1 制作，是独立维护的社区中文增强版，并非原作者的官方中文发行版。原作者版权及 MIT 许可证完整保留；本仓库主要提供中文体验优化、笔记编辑增强和问题修复。
 
-## Local-first, concretely
+## 适合用来做什么
 
-A vault is a folder on disk. Everything Astro writes lives under a hidden
-`.astro/` subfolder inside it:
+- **程序员知识库**：记录 Java、前端、数据库等知识点，并用代码块保留示例。
+- **错题与 Bug 复盘**：记录触发条件、错误原因、修复步骤和相关知识。
+- **项目经验整理**：通过文件夹分类和笔记关联，把零散经验连接起来。
+- **个人知识网络**：在 2D / 3D 星图中查看关联，点击星星直接打开笔记。
 
-```
-my-vault/
-└── .astro/
-    ├── vault.json          vault metadata + settings
-    ├── notes/              one plain Markdown file per note (YAML frontmatter + CommonMark)
-    └── canvases/           one JSON document per canvas (structural edges, the graph's edge store)
-```
+笔记保存在自己选择的本地文件夹中，正文采用 Markdown。普通记笔记无需登录账号，也无需配置 AI。
 
-No database, no proprietary format. Any editor, static site generator, or
-script can read a vault without running Astro. `[[Wiki-links]]` in note
-bodies resolve by title; the knowledge graph itself is never stored — it's
-derived fresh from the files every time. Full spec:
-[docs/DATA-FORMAT.md](docs/DATA-FORMAT.md).
+## 主要功能
 
-```mermaid
-flowchart LR
-    Vault["Vault folder on disk (my-vault/.astro/)"] --> Astro["Astro (desktop or browser build)"]
-    Astro --> Graph["Derived 3D graph"]
-    Vault --> MCP["MCP server (solen-mcp)"]
-    MCP --> Agent["AI agent"]
-```
+| 功能 | 说明 |
+| --- | --- |
+| 中文界面 | 常用菜单、设置、提示、示例、内置插件和星座名称使用简体中文 |
+| Markdown 编辑 | 编辑、预览、源码三种方式；支持标题、加粗、列表、引用、表格和任务项 |
+| 格式化粘贴 | 识别常见富文本和 Markdown；支持从 VS Code 粘贴代码 |
+| 代码笔记 | 多语言语法高亮、语言标签、代码复制；编辑时隐藏代码围栏 |
+| 文件夹分类 | 新建、重命名、移动、删除；笔记与文件夹混合排序 |
+| 嵌套移动 | 文件夹连同子目录、空目录和笔记一起移动，支持拖动和菜单操作 |
+| 知识关联 | 双向链接和图谱关联；重命名时同步已有引用，保留笔记身份 |
+| 2D / 3D 星图 | 点击查看、拖动整理、关联高亮、星座排列；2D 支持避让和自动整理 |
+| 智能助手 | 可配置 DeepSeek 等服务及兼容接口；显示当前模型，可将回答插入当前笔记 |
+| 本地保存 | 自动保存、知识库切换、导入导出；桌面版将笔记保存为本地文件 |
 
-## Quick start
+品牌、模型名称、代码、网址和第三方服务返回的内容可能保留原文。复杂图谱仍可能出现交叉连线；自动整理不能保证消除所有交叉。
 
-**Windows:** grab the installer from the
-[latest release](https://github.com/Solen-AI-org/Astro/releases/latest) and run
-it — no toolchain, no build step. It is unsigned, so SmartScreen will warn on
-first run; "More info" → "Run anyway". macOS and Linux builds are not published
-yet: build them from source with `pnpm --filter @solen/desktop dist`, which
-produces a `.dmg` or an AppImage for the platform you run it on.
+## 效果预览
 
-Astro ships two builds from the same code: a browser build (`apps/web`,
-IndexedDB storage, nothing to install) and a desktop build (`apps/desktop`,
-Electron, a vault is literally that folder on disk). **The desktop app is the
-real product** — filesystem vaults, the multi-vault switcher, an integrated
-terminal, and the MCP server all need it. The browser build is for trying
-Astro with zero install.
+![Astro CN 中文界面与知识星图](docs/assets/astro-cn-overview.png)
 
-**Browser build:**
+![Markdown 与 Java 代码笔记](docs/assets/astro-cn-editor.png)
 
-```bash
-git clone https://github.com/Solen-AI-org/Astro.git
-cd Astro
-pnpm install
-pnpm dev        # → http://localhost:5173
-```
+截图使用专门生成的演示笔记，不包含个人知识库、API 密钥或真实聊天内容。更多使用方式见[使用指南](docs/USER-GUIDE.zh-CN.md)。
 
-**Desktop app:**
+## 下载和安装
 
-```bash
-pnpm install
-pnpm --filter @solen/web build      # apps/desktop loads apps/web's built dist/
-pnpm --filter @solen/desktop dev    # compiles main/preload, launches Electron
-```
+1. 打开 [Releases](https://github.com/Cottins-Vanilla/Astro-CN/releases/latest)。
+2. 下载 **Astro-CN-0.2.0-windows-x64-setup.exe**。
+3. 运行安装向导，可选择安装目录和快捷方式。
+4. 首次启动时，选择一个保存知识库的文件夹。
 
-`pnpm --filter @solen/desktop dist` packages an installer for your platform
-(`.dmg` on macOS, NSIS on Windows, AppImage on Linux). See
-[docs/DESKTOP.md](docs/DESKTOP.md) for the vault switcher, the integrated
-terminal, and `SOLEN_VAULT_DIR` for scripted testing.
+当前发行目标为 **Windows 10 / 11，x64**。普通使用不需要自行安装 Node.js 或 pnpm。此社区版本暂未购买代码签名证书，安装包不带发布者数字签名；发布页同时提供 SHA-256 校验文件。
 
-## The graph is the workspace
+已有本地中文版用户：安装版继续使用 Astro-Chinese 配置目录，可重新选择原来的知识库。升级前建议使用“导出知识库备份”。卸载程序不会主动删除保存在其他位置的知识库。
 
-There's no separate canvas and no read-only map — you think *in* the graph.
-Every note is a star in real XYZ space that you orbit, drag, and edit
-directly; the editor, AI chat, and plugin panels float over that same sky as
-their own cards instead of docking beside it, so opening a note never
-resizes the graph underneath it. Structural links are a gesture, not syntax:
-Shift-drag from one star to another and the connection is saved directly
-into the vault — no brackets required, though `[[wiki-links]]` still work if
-you type them. Details: [docs/WORKSPACE-3D.md](docs/WORKSPACE-3D.md).
+## 常用操作
 
-![A note open in the floating editor, with its outgoing links and backlinks listed below the text, the graph still visible behind it](docs/assets/editor.png)
+| 操作 | 方法 |
+| --- | --- |
+| 打开笔记 | 点击星图中的星星，或点击左侧笔记 |
+| 建立关联 | 按住 Shift，从一颗星拖到另一颗星 |
+| 搜索操作和笔记 | Ctrl + K |
+| 切换星座排列 | Ctrl + G |
+| 编辑代码 | 在笔记工具栏选择语言并插入代码，或粘贴已有代码 |
+| 查看 Markdown 原文 | 切换到“源码” |
+| 整理分类 | 拖动左侧条目，或使用“…”菜单 |
 
-### Constellation Mode
+文件夹在每次重新启动后默认收起；同一次使用中的展开状态会保留。
 
-One toggle re-lays-out the exact same graph — same nodes, same links — as a
-star chart. Clusters snap onto real IAU constellation shapes (Orion,
-Cassiopeia, Ursa Major, and 83 more) whenever their connection pattern
-statistically matches one, falling back to a generic asterism otherwise. It's
-a different presentation of identical data, not a second graph. Details:
-[docs/CONSTELLATION.md](docs/CONSTELLATION.md).
+## 数据和隐私
 
-![The same vault in Constellation Mode, its cluster laid out on the Eridanus line figure with the match strength named underneath](docs/assets/constellation-mode.png)
+桌面知识库采用以下结构：
 
-## AI on your own terms
+~~~text
+你的知识库/
+└─ .astro/
+   ├─ notes/       # Markdown 笔记，可包含分类目录
+   ├─ canvases/    # 星图中手动建立的结构关联
+   └─ vault.json   # 知识库设置
+~~~
 
-AI is entirely opt-in. Bring your own key (Anthropic or any OpenAI-compatible
-endpoint), point it at a local runtime (Ollama, llama.cpp server — no key at
-all), or skip AI entirely. Keys live only in your local vault settings and go
-only to the provider you picked.
+Windows 应用配置目录是 %APPDATA%/Astro-Chinese。不要把自己的知识库、应用配置或备份直接提交到公开仓库。
 
-![The AI panel on a fresh install, stating that no provider is configured yet and linking to AI settings](docs/assets/ai.png)
+AI 是可选功能：启用后，发送的提问及所选上下文会交给你配置的模型服务。API 配置随知识库设置保存，目前不提供系统密钥链加密；共享知识库、截图或备份前应清除密钥。程序还保留上游的联网功能，例如打开网页和下载星座数据，因此“本地保存”不代表所有功能都离线。
 
-### MCP + agent skills
+## 从源码运行
 
-The MCP server (`packages/mcp-server`, binary `solen-mcp`) exposes an open
-vault's notes, search, and knowledge graph to any MCP-capable agent — Claude
-Code, Claude Desktop, Codex/ChatGPT, Cursor, Antigravity, Goose — wired up
-from **Settings → Connections** with one click per client. No vault path is
-ever written into a client's config; the server always resolves whichever
-vault Astro currently has open, so switching vaults in the app is what
-changes what a connected agent can see. Full protocol and per-client details:
-[docs/MCP.md](docs/MCP.md).
+需要 **Node.js 24 LTS、pnpm 11.25.0 和 Git**。
 
-![Settings → Connections: one row per AI client, each naming the exact config file it writes, plus a Test button that runs the server the way a client would](docs/assets/settings-connections.png)
+~~~sh
+git clone https://github.com/Cottins-Vanilla/Astro-CN.git
+cd Astro-CN
+pnpm install --frozen-lockfile
+pnpm build
+pnpm --filter @solen/desktop start
+~~~
 
-On top of that, [`skills/`](skills) ships two agent skills that turn a vault
-into an AI's actual long-term memory, not just a data source:
+只调试浏览器界面可运行 pnpm dev。浏览器版使用 IndexedDB，与桌面版的磁盘知识库分开。Windows 安装包构建、测试和目录说明见[开发指南](docs/DEVELOPMENT.zh-CN.md)。
 
-- **[`astro-brain`](skills/astro-brain/SKILL.md)** writes the outcome of a
-  working session back into the open vault as notes, then repairs broken
-  wiki-links, orphans, and duplicates it finds along the way.
-- **[`stardust`](skills/stardust/SKILL.md)** turns any folder — a codebase, a
-  docs tree, a pile of papers — into a graph of notes and wiki-links inside
-  the vault, so Astro's 3D sky becomes the visualization and an agent can
-  walk the graph instead of grepping the folder.
+## 项目结构
 
-Both are plain Markdown with a YAML header — no install step, no runtime.
-They reach the vault the same way Astro's Connections pane does (MCP first,
-a filesystem fallback if MCP isn't wired up), and neither ever hardcodes a
-path. See [skills/README.md](skills/README.md).
+~~~text
+apps/web/          React、CodeMirror 与 Three.js 界面
+apps/desktop/      Electron 桌面外壳、本地文件和安装包配置
+packages/core/     笔记格式、链接解析、图谱与存储接口
+packages/plugin-api/ 插件接口
+packages/mcp-server/ 上游 MCP 服务源码
+scripts/           构建、许可和发布检查脚本
+docs/              使用说明、开发文档及上游设计资料
+~~~
 
-## Plugins
+MCP、终端、网页浏览及其他上游扩展仍处于持续验证范围。当前安装包不内置独立 MCP 服务运行包；需要该功能时请按上游文档从源码构建，不应将其理解为 AI 已具备任意创建、删除笔记的自动操作权限。
 
-A plugin is a JS/TS module that receives a typed `SolenAPI` object at load
-time — the same surface Astro's own built-in features use — and registers
-commands, panels, node types, themes, or event listeners against it. Zero
-runtime dependencies, no framework requirement. See
-[docs/PLUGINS.md](docs/PLUGINS.md) and the reference plugin at
-[`apps/web/src/plugins/builtin/wordcount.ts`](apps/web/src/plugins/builtin/wordcount.ts).
+## 反馈和贡献
 
-## What's in the box
+欢迎通过 [Issues](https://github.com/Cottins-Vanilla/Astro-CN/issues) 提交问题、功能建议和中文表达改进。请附上系统版本、应用版本、复现步骤和预期结果；截图请隐藏笔记隐私和 API 密钥。
 
-| Package | What it is |
-|---|---|
-| [`apps/web`](apps/web) | The app itself — 3D graph workspace, editor, command palette, AI panel, plugin host |
-| [`apps/desktop`](apps/desktop) | Electron shell: filesystem vaults, the multi-vault switcher, integrated terminal, in-app browser |
-| [`packages/core`](packages/core) | Data model, vault adapters, wiki-link parsing, graph derivation |
-| [`packages/plugin-api`](packages/plugin-api) | The typed surface plugins build against |
-| [`packages/mcp-server`](packages/mcp-server) | `solen-mcp` — expose a vault to AI agents over MCP |
-| [`skills`](skills) | `astro-brain` and `stardust` — agent skills that make a vault an AI's memory |
+提交代码前请阅读 [CONTRIBUTING.md](CONTRIBUTING.md)。安全问题按 [SECURITY.md](SECURITY.md) 说明处理，不要公开粘贴密钥。
 
-## Documentation
+## 开源许可与致谢
 
-- [Architecture](docs/ARCHITECTURE.md)
-- [Vault data format](docs/DATA-FORMAT.md)
-- [Design language](docs/DESIGN.md)
-- [The 3D workspace](docs/WORKSPACE-3D.md)
-- [Constellation Mode](docs/CONSTELLATION.md)
-- [Plugin development](docs/PLUGINS.md)
-- [MCP server](docs/MCP.md)
-- [Agent skills](skills/README.md)
-- [Desktop app](docs/DESKTOP.md)
-- [Roadmap](docs/ROADMAP.md)
+- 原项目：[Solen-AI-org/Astro](https://github.com/Solen-AI-org/Astro)，Copyright (c) 2026 Solen AI，采用 [MIT](LICENSE) 许可证。
+- 本项目：在原项目基础上维护的中文增强版。当前 Git 历史从本地修改版源码快照开始，不包含上游完整提交历史；[来源与修改说明](docs/UPSTREAM.md) 记录了继承关系。
+- 星座数据等材料另有许可，详见 [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md)。安装包附带相关许可及依赖许可汇总。
+- 感谢 Electron、React、CodeMirror、Three.js、D3 等开源项目。
 
-## Maturity
-
-The core app — graph, editor, plugins, both builds — works end to end and is
-young. Specifically, not yet real:
-
-- **Sync** — Settings → Sync is marked "coming soon." Today a vault is local
-  to one machine (or synced by whatever external tool you point at the
-  folder yourself); a first-party sync service is a v0.4 roadmap item.
-- **Google sign-in** — proves who you are and nothing else yet. It doesn't
-  back up, sync, or attach your vault to anything.
-- **Mobile** — doesn't exist.
-
-Good first contributions right now are plugins, themes, and issues that
-sharpen the roadmap. Open an issue before a large change.
-
-Found a security issue? Please report it privately — see [SECURITY.md](SECURITY.md),
-not a public issue.
-
-## License
-
-[MIT](LICENSE).
-
-Astro bundles constellation line-figure data derived from
-[d3-celestial](https://github.com/ofrohn/d3-celestial) (BSD-3-Clause) — full notice in
-[THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).
+本项目免费开源，不代表获得原作者或第三方项目的官方认证、合作或背书。

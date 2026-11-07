@@ -147,7 +147,7 @@ describe("malformed JSON config", () => {
 
     const result = await connectClient(claudeCode, roots, ENTRY_PATH);
     expect(result.ok).toBe(false);
-    if (!result.ok) expect(result.error).toMatch(/not valid JSON/i);
+    if (!result.ok) expect(result.error).toMatch(/JSON 格式有误，未作修改/);
 
     expect(await readFile(filePath, "utf8")).toBe(malformed);
   });

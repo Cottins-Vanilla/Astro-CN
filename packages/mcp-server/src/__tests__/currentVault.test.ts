@@ -42,11 +42,11 @@ describe("readCurrentVaultPath", () => {
 describe("desktopConfigPath", () => {
   it("mirrors Electron's userData location per platform", () => {
     expect(desktopConfigPath({ APPDATA: "C:\\Roaming" }, "win32")).toBe(
-      path.join("C:\\Roaming", "@solen", "desktop", "desktop-config.json"),
+      path.join("C:\\Roaming", "Astro-Chinese", "desktop-config.json"),
     );
     expect(desktopConfigPath({ XDG_CONFIG_HOME: "/xdg" }, "linux")).toBe(
-      path.join("/xdg", "@solen", "desktop", "desktop-config.json"),
+      path.join("/xdg", "Astro-Chinese", "desktop-config.json"),
     );
-    expect(desktopConfigPath({}, "darwin")).toContain(path.join("Library", "Application Support", "@solen", "desktop"));
+    expect(desktopConfigPath({}, "darwin")).toContain(path.join("Library", "Application Support", "Astro-Chinese"));
   });
 });

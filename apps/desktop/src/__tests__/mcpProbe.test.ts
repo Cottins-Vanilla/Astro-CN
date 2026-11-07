@@ -99,6 +99,6 @@ describe("probeMcpServer", () => {
     const scriptPath = await writeScript(NEVER_ANSWERS);
     const result = await probeMcpServer(scriptPath, SHORT_TIMEOUT_MS);
     expect(result.ok).toBe(false);
-    if (!result.ok) expect(result.error).toMatch(/timed out/i);
+    if (!result.ok) expect(result.error).toMatch(/等待连接服务响应超过 0\.3 秒/);
   });
 });

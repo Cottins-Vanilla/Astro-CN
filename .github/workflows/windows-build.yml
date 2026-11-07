@@ -1,0 +1,32 @@
+name: Windows installation package
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build:windows
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: false
+      - name: Checksum
+        shell: pwsh
+        run: |
+          $file = Get-ChildItem apps/desktop/release/*-setup.exe
+          $lines = $file | ForEach-Object { ((Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLower() + '  ' + $_.Name) }
+          $lines | Set-Content apps/desktop/release/SHA256SUMS.txt -Encoding utf8
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Astro-CN-windows-x64
+          path: |
+            apps/desktop/release/*-setup.exe
+            apps/desktop/release/SHA256SUMS.txt
+          if-no-files-found: error

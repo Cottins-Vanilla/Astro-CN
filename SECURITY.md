@@ -1,10 +1,11 @@
-# Security Policy
+# 安全与隐私
 
-Astro is pre-1.0; there is one supported line: the latest commit on `main`.
+本项目是社区修改版，目前仅维护最新社区发行版本，不承诺响应时限。
 
-## Reporting a vulnerability
+请勿在公开 Issue、截图、日志或附件中提供 API 密钥、访问令牌、私人笔记、个人知识库或完整应用配置。知识库 vault.json 可能包含 AI 密钥。
 
-Please do **not** open a public issue for security vulnerabilities.
+若误公开了密钥，请立即到对应服务撤销并重新生成。删除网页上的文字并不能保证密钥已经失效。
 
-Instead, email matteo@solenai.app with a description of the issue and steps
-to reproduce. We'll acknowledge and follow up as soon as we can.
+普通问题可使用 GitHub Issues；敏感问题请使用仓库启用的私密漏洞报告功能。若该功能尚未启用，先提交不含敏感细节的问题，请维护者提供私密沟通方式。
+
+AI、第三方网页和 MCP 扩展会涉及外部服务或工具权限。只配置自己信任的服务，在分享数据前检查其范围。本项目不将“本地保存”解释为完全离线，也未将普通本地配置视为加密的密钥存储。

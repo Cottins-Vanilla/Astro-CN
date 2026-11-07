@@ -1,6 +1,6 @@
 {
   "name": "@solen/desktop",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "private": true,
   "license": "MIT",
   "type": "module",
@@ -45,6 +45,18 @@
       {
         "from": "build",
         "to": "build"
+      },
+      {
+        "from": "../../LICENSE",
+        "to": "licenses/LICENSE"
+      },
+      {
+        "from": "../../THIRD-PARTY-NOTICES.md",
+        "to": "licenses/THIRD-PARTY-NOTICES.md"
+      },
+      {
+        "from": "../../README.zh-CN.md",
+        "to": "licenses/README.zh-CN.md"
       }
     ],
     "mac": {
@@ -59,7 +71,8 @@
       "target": [
         "nsis"
       ],
-      "signAndEditExecutable": false
+      "executableName": "Astro中文版",
+      "signExecutable": false
     },
     "linux": {
       "icon": "build/icon.png",
@@ -75,7 +88,21 @@
         "zh_CN"
       ],
       "language": "2052",
-      "artifactName": "Astro-Chinese-Setup-${version}.${ext}"
+      "artifactName": "Astro-CN-0.2.0-windows-x64-setup.${ext}",
+      "perMachine": false,
+      "createDesktopShortcut": "always",
+      "createStartMenuShortcut": true,
+      "shortcutName": "Astro 中文版",
+      "deleteAppDataOnUninstall": false,
+      "runAfterFinish": false
+    },
+    "electronVersion": "33.4.11",
+    "npmRebuild": false,
+    "toolsets": {
+      "nsis": "1.2.1"
     }
-  }
+  },
+  "description": "Astro 社区中文增强版：面向知识点、代码经验与错题的本地 Markdown 笔记和知识星图。",
+  "author": "Astro CN community; based on Astro by Solen AI",
+  "homepage": "https://github.com/Cottins-Vanilla/Astro-CN"
 }

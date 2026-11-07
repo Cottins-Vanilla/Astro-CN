@@ -24,3 +24,14 @@ graphify-out/
 # is source-compiled main/preload JS, also build output — both stay ignored
 # by the blanket rules above).
 apps/desktop/release/
+
+# Local vaults, publication artifacts and credentials
+release/
+artifacts/
+.local/
+*.pfx
+*.p12
+*.pem
+*.key
+desktop-config.json
+apps/desktop/build/THIRD-PARTY-DEPENDENCIES.txt
