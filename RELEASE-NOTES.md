@@ -32,6 +32,10 @@ SHA256SUMS.txt 列出最终附件的 SHA-256。可使用 PowerShell 的 Get-File
 
 详细变化见 [CHANGELOG.md](https://github.com/Cottins-Vanilla/Astro-CN/blob/main/CHANGELOG.md)，使用方式见[使用指南](https://github.com/Cottins-Vanilla/Astro-CN/blob/main/docs/USER-GUIDE.zh-CN.md)。
 
+## 验证结果
+
+本地工作区构建与类型检查通过，668 项自动测试通过。实际安装版完成 11 项界面与磁盘保存检查，安装及卸载验证通过，卸载后外部演示知识库保持完整。详见 [验证记录](https://github.com/Cottins-Vanilla/Astro-CN/blob/main/docs/VALIDATION-0.2.0.md)。
+
 ## 开源与致谢
 
 原项目：Solen-AI-org/Astro，Copyright (c) 2026 Solen AI，MIT。星座数据和其他依赖遵守各自许可，安装包附带对应说明。感谢原作者和开源社区。
