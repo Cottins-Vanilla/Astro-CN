@@ -26,6 +26,24 @@ beforeEach(() => {
 afterEach(async () => { await vi.runAllTimersAsync(); vi.restoreAllMocks(); vi.useRealTimers(); });
 
 describe("分类管理及保存", () => {
+  it("取消关联时只删除指向所选文件夹中那篇笔记的链接", async () => {
+    const rows = [
+      { ...make("a"), body: "[[Java/错题]]\n[[其他/错题]]\n" },
+      { ...make("b", "Java"), title: "错题" },
+      { ...make("c", "其他"), title: "错题" },
+    ];
+    disk = new Map(rows.map(note => [note.id, { ...note }]));
+    useStore.setState({
+      notes: Object.fromEntries(rows.map(note => [note.id, note])),
+      noteList: rows.map(({ body, ...meta }) => meta),
+    });
+    await useStore.getState().unlinkNotePair("a", "b");
+    expect(disk.get("a")?.body).toBe("[[其他/错题]]\n");
+    await useStore.getState().deleteNote("c");
+    expect(disk.get("a")?.body).toBe("");
+  });
+
+
   it("改名包括子文件夹和空文件夹，不影响前缀相似的分类", async () => {
     await useStore.getState().renameNoteFolder("Java", "后端");
     expect(disk.get("a")?.folder).toBe("后端");

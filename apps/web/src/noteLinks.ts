@@ -2,16 +2,16 @@ import { createWikiLinkResolver, parseWikiLinks, type Note } from "@solen/core";
 
 /**
  * Remove every `[[Title]]` / `[[Title|alias]]` occurrence targeting
- * `targetTitle` (case-insensitive) from a note body. Used only by the graph's
+ * `targetTitle` (case-insensitive), or matching a target predicate, from a note body. Used by the graph's
  * edge Unlink action for the rare wikilink-sourced edge — hand-typed
  * `[[links]]` remain supported, but no 3D-graph gesture writes them (see
  * docs/WORKSPACE-3D.md: gesture-created links are structural canvas edges).
  * A link that lived alone on its own line (the common case) removes the
  * whole line; an inline link just loses its bracket text.
  */
-export function removeWikiLinkOccurrences(body: string, targetTitle: string): string {
-  const lower = targetTitle.toLowerCase();
-  const links = parseWikiLinks(body).filter((l) => l.target.toLowerCase() === lower);
+export function removeWikiLinkOccurrences(body: string, target: string | ((target: string) => boolean)): string {
+  const matches = typeof target === "string" ? (value: string) => value.toLowerCase() === target.toLowerCase() : target;
+  const links = parseWikiLinks(body).filter(link => matches(link.target));
   if (links.length === 0) return body;
 
   let result = body;

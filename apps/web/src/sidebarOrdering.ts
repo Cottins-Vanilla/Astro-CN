@@ -1,3 +1,6 @@
+import type { NoteMeta } from "@solen/core";
+import type { FolderNode } from "./noteFolders";
+
 export type SidebarOrder = Record<string, string[]>;
 export const folderKey = (path: string) => "folder:" + path;
 export const noteKey = (id: string) => "note:" + id;
@@ -14,6 +17,19 @@ export function orderedSidebarItems<T extends { key: string }>(items: T[], paren
   const saved = Array.isArray(order[parent]) ? order[parent] : [];
   const rank = new Map(saved.map((key, i) => [key, i]));
   return [...items].sort((a, b) => (rank.get(a.key) ?? Infinity) - (rank.get(b.key) ?? Infinity));
+}
+
+type SidebarItem = { key: string; folder: FolderNode } | { key: string; note: NoteMeta };
+
+/** Both the sidebar and the link picker display the same mixed order within a folder. */
+export function sidebarLevelItems(
+  folders: FolderNode[], notes: NoteMeta[], parent: string, order: SidebarOrder,
+): SidebarItem[] {
+  const folderItems = folders.map(folder => ({ key: folderKey(folder.path), folder }));
+  const noteItems = notes.filter(note => (note.folder ?? "") === parent)
+    .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
+    .map(note => ({ key: noteKey(note.id), note }));
+  return orderedSidebarItems<SidebarItem>([...folderItems, ...noteItems], parent, order);
 }
 
 export function reorderSidebarItems(keys: string[], moving: string, target: string, after: boolean): string[] {

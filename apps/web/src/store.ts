@@ -2,6 +2,7 @@ import { readSidebarOrder, moveSidebarFolder, sidebarLevelKeys, parentPath, rena
 import { create } from "zustand";
 import { folderPath, folderTree, allFolderPaths, isInsideFolder, renameFolderPlan, moveFolderPlan, applyFolderMoves } from "./noteFolders";
 import {
+  createWikiLinkResolver,
   ghostTitleFromId,
   IndexedDbVault,
   newCanvasId,
@@ -519,7 +520,7 @@ export const useStore = create<AppState>((set, get) => {
    * referencing it, and strips lingering `[[deletedTitle]]` wikilink text from every other note's
    * body so the derived graph never resurrects it as a ghost. See `deleteNote`'s original comment
    * for why this matters. */
-  async function sweepAfterNoteRemoved(id: string, deletedTitle: string | undefined): Promise<void> {
+  async function sweepAfterNoteRemoved(id: string, previousTitle: string | undefined): Promise<void> {
     pendingNoteRenames.delete(id);
     const canvasMetas = await vault.listCanvases();
     for (const meta of canvasMetas) {
@@ -535,8 +536,10 @@ export const useStore = create<AppState>((set, get) => {
       vaultEvents.emit("canvas:changed", { id: updated.id });
     }
 
-    if (deletedTitle) {
-      for (const meta of get().noteList) {
+    if (previousTitle) {
+      const notes = get().noteList.map(meta => meta.id === id ? { ...meta, title: previousTitle } : meta);
+      const resolve = createWikiLinkResolver(notes);
+      for (const meta of notes) {
         if (meta.id === id) continue;
         const cached = get().notes[meta.id];
         // `get().noteList` is the PRE-rescan list, so when several notes were deleted outside the
@@ -552,7 +555,7 @@ export const useStore = create<AppState>((set, get) => {
             continue;
           }
         }
-        const strippedBody = removeWikiLinkOccurrences(note.body, deletedTitle);
+        const strippedBody = removeWikiLinkOccurrences(note.body, target => resolve(target, note)?.id === id);
         if (strippedBody === note.body) continue;
         const updatedAt = new Date().toISOString();
         const updated = { ...note, body: strippedBody, updatedAt };
@@ -1085,7 +1088,7 @@ export const useStore = create<AppState>((set, get) => {
       noteSaveTimers.delete(id);
       try {
         await queueNoteTask(id, async () => {
-          const deletedTitle = get().noteList.find(n => n.id === id)?.title;
+          const deletedTitle = pendingNoteRenames.get(id)?.title ?? get().noteList.find(n => n.id === id)?.title;
           await vault.deleteNote(id);
           await sweepAfterNoteRemoved(id, deletedTitle);
         });
@@ -1189,26 +1192,15 @@ export const useStore = create<AppState>((set, get) => {
     },
 
     async unlinkNotePair(idA, idB) {
-      // Either endpoint can be a ghost (an unresolved `[[wiki-link]]` target with no note behind
-      // it — see buildLinkIndex): it has no body to strip and `readNote` would throw on its id,
-      // but the real note across from it still holds the link that conjured it, and the ghost's
-      // own id carries the title needed to strip it.
-      const titleOf = (id: string) => get().noteList.find((n) => n.id === id)?.title ?? ghostTitleFromId(id);
-      const titleA = titleOf(idA);
-      const titleB = titleOf(idB);
-
-      // A pair of notes can be connected by a wiki-link in EITHER note's body, a structural
-      // (canvas) edge, or both at once (the two link mechanisms are independent — see
-      // docs/WORKSPACE-3D.md) — Unlink must sever every one of them, not just whichever the
-      // clicked edge happened to represent, or a "less bright" duplicate edge lingers.
-      for (const [fromId, targetTitle] of [
-        [idA, titleB],
-        [idB, titleA],
-      ] as const) {
-        if (!targetTitle || ghostTitleFromId(fromId) !== null) continue;
-        const cached = get().notes[fromId];
-        const note = cached ?? (await vault.readNote(fromId));
-        const strippedBody = removeWikiLinkOccurrences(note.body, targetTitle);
+      const resolve = createWikiLinkResolver(get().noteList);
+      // Either note can link to the other. Match the resolved ID so paths and
+      // duplicate titles are handled the same way as in the graph.
+      for (const [fromId, toId] of [[idA, idB], [idB, idA]]) {
+        if (ghostTitleFromId(fromId) !== null) continue;
+        const note = get().notes[fromId] ?? await vault.readNote(fromId);
+        const ghostTitle = ghostTitleFromId(toId);
+        const strippedBody = removeWikiLinkOccurrences(note.body,
+          ghostTitle ?? (target => resolve(target, note)?.id === toId));
         if (strippedBody === note.body) continue;
         const updated = { ...note, body: strippedBody, updatedAt: new Date().toISOString() };
         await vault.writeNote(updated);

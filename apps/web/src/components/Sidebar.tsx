@@ -1,4 +1,4 @@
-import { folderKey, noteKey, parentPath, sidebarLevelKeys, orderedSidebarItems, reorderSidebarItems } from "../sidebarOrdering";
+import { folderKey, noteKey, parentPath, sidebarLevelKeys, sidebarLevelItems, reorderSidebarItems } from "../sidebarOrdering";
 import { AnimatedDisclosure } from "./AnimatedDisclosure";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ChevronDown, ChevronRight, FileText, Folder, FolderOpen, FolderPlus, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
@@ -59,12 +59,10 @@ export function Sidebar() {
   const paths = useMemo(() => allFolderPaths(tree), [tree]);
   const notes = useMemo(() => [...noteList].sort((a,b) => b.updatedAt.localeCompare(a.updatedAt)), [noteList]);
   const filtered = notes.filter(n => n.title.toLowerCase().includes(query.trim().toLowerCase()));
-  type Entry = { key: string; folder: FolderNode } | { key: string; note: NoteMeta };
-  function levelItems(nodes: FolderNode[], parent: string): Entry[] {
-    return orderedSidebarItems<Entry>([...nodes.map(folder => ({ key: folderKey(folder.path), folder })),
-      ...notes.filter(n => (n.folder ?? "") === parent).map(note => ({ key: noteKey(note.id), note }))], parent, sidebarOrder);
+  function levelItems(nodes: FolderNode[], parent: string) {
+    return sidebarLevelItems(nodes, noteList, parent, sidebarOrder);
   }
-  function siblings(parent: string): Entry[] {
+  function siblings(parent: string) {
     const find = (nodes: FolderNode[]): FolderNode | undefined => { for (const node of nodes) { if (node.path === parent) return node; const found = find(node.children); if (found) return found; } };
     return levelItems(parent ? find(tree)?.children ?? [] : tree, parent);
   }
@@ -344,7 +342,7 @@ export function Sidebar() {
       </form>}
       {error && <p role="alert" className="sidebar-error">{error}</p>}
       <input value={query} onChange={e => { setQuery(e.target.value); setMenu(null); }} placeholder="搜索笔记…"
-        className="w-full mb-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] px-2 py-1 text-xs outline-none focus:border-[var(--color-accent)]" />
+        className="sidebar-search-input" />
       {query.trim() ? <ul>{filtered.map(n => noteRow(n, true))}{!filtered.length && !bodyMatches.length && <li className="sidebar-empty">没有找到相关内容</li>}</ul> : <>
         <ul className="sidebar-folder-list">{renderLevel(tree, "")}</ul>
         <button className={"sidebar-folder sidebar-root " + (activeFolder === "" ? "active " : "") + (dropPath === "" ? "drop-target" : "")}

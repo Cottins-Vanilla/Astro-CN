@@ -65,7 +65,9 @@ function normalizeTarget(target: string): string {
 }
 
 /** A note's full `folder/title` identity, in the same normalized form as `normalizeTarget`. */
-function notePathKey(note: Note): string {
+type LinkableNote = Pick<Note, "id" | "title" | "folder">;
+
+function notePathKey(note: LinkableNote): string {
   const folder = (note.folder ?? "").replace(/\\/g, "/").replace(/^\/+|\/+$/g, "").toLowerCase();
   const title = note.title.toLowerCase();
   return folder ? `${folder}/${title}` : title;
@@ -73,16 +75,16 @@ function notePathKey(note: Note): string {
 
 /** Deterministic pick when a target genuinely matches more than one note, so the same vault always
  * draws the same graph rather than depending on note order off disk. */
-function firstByPath(candidates: Note[]): Note {
+function firstByPath<T extends LinkableNote>(candidates: T[]): T {
   return [...candidates].sort((a, b) => notePathKey(a).localeCompare(notePathKey(b)))[0];
 }
 
 /** Resolve a wiki-link using the same path and duplicate-title rules as the graph. */
-export function createWikiLinkResolver(notes: Note[]): (target: string, from: Note) => Note | undefined {
+export function createWikiLinkResolver<T extends LinkableNote>(notes: T[]): (target: string, from: LinkableNote) => T | undefined {
   /** Every note that carries a given title — a list, not one winner, because repeated titles are
    * normal in an imported vault and each copy has to stay reachable. */
-  const byLowerTitle = new Map<string, Note[]>();
-  const byPath = new Map<string, Note>();
+  const byLowerTitle = new Map<string, T[]>();
+  const byPath = new Map<string, T>();
 
   for (const note of notes) {
     const title = note.title.toLowerCase();
@@ -96,7 +98,7 @@ export function createWikiLinkResolver(notes: Note[]): (target: string, from: No
    * partial path (Obsidian shortens them when unambiguous), then the bare title — preferring a
    * note in the linking note's own folder, which is what `[[Status]]` written inside a project
    * folder means. */
-  function resolve(target: string, from: Note): Note | undefined {
+  function resolve(target: string, from: LinkableNote): T | undefined {
     const t = normalizeTarget(target);
 
     const exact = byPath.get(t);

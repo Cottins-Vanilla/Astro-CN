@@ -14,7 +14,7 @@ import { Annotation, Compartment, EditorState } from "@codemirror/state";
 import { markdown } from "@codemirror/lang-markdown";
 import { languages } from "@codemirror/language-data";
 import { autocompletion, type CompletionContext, type CompletionResult } from "@codemirror/autocomplete";
-import { parseWikiLinks, type LinkIndex } from "@solen/core";
+import { createWikiLinkResolver, parseWikiLinks, type LinkIndex } from "@solen/core";
 import { useStore } from "../store";
 import { usePanelMount } from "../usePanelMount";
 import { solenEditorTheme, solenSyntaxHighlighting } from "../editorTheme";
@@ -138,6 +138,7 @@ export function NoteEditor() {
   const [codeLanguage, setCodeLanguage] = useState("java");
   useEffect(() => { setPreview(false); setSource(false); }, [note?.id]);
   const [pickerOpen, setPickerOpen] = useState(false);
+  useEffect(() => setPickerOpen(false), [openNoteId]);
   const [pickerMode, setPickerMode] = useState<"insert" | "connect">("insert");
   const [linkIndex, setLinkIndex] = useState<LinkIndex | null>(null);
 
@@ -276,7 +277,7 @@ export function NoteEditor() {
   useEffect(() => {
     if (!openNoteId) return;
     function onKeyDown(e: KeyboardEvent) {
-      if (e.key === "Escape") closeEditor();
+      if (e.key === "Escape" && !pickerOpen) closeEditor();
       else if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "l") {
         e.preventDefault();
         setPickerMode("insert");
@@ -285,23 +286,23 @@ export function NoteEditor() {
     }
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [openNoteId, closeEditor]);
+  }, [openNoteId, closeEditor, pickerOpen]);
 
-  const knownTitles = useMemo(() => new Map(noteList.map((n) => [n.title.toLowerCase(), n])), [noteList]);
+  const resolveWikiLink = useMemo(() => createWikiLinkResolver(noteList), [noteList]);
 
   const outgoing = useMemo(() => {
     if (!note) return [];
     const seen = new Set<string>();
-    const links: { title: string; id?: string; ghost: boolean }[] = [];
+    const links: { target: string; title: string; id?: string }[] = [];
     for (const link of parseWikiLinks(note.body)) {
       const key = link.target.toLowerCase();
       if (seen.has(key)) continue;
       seen.add(key);
-      const resolved = knownTitles.get(key);
-      links.push({ title: link.target, id: resolved?.id, ghost: !resolved });
+      const resolved = resolveWikiLink(link.target, note);
+      links.push({ target: link.target, title: link.alias ?? resolved?.title ?? link.target, id: resolved?.id });
     }
     return links;
-  }, [note, knownTitles]);
+  }, [note, resolveWikiLink]);
 
   const backlinks = useMemo(() => {
     if (!note || !linkIndex) return [];
@@ -341,8 +342,9 @@ export function NoteEditor() {
   }
 
   function handleConnect(title: string) {
-    if (!note) return;
-    updateNoteBody(note.id, appendConnection(note.body, title));
+    const state = useStore.getState();
+    const current = note && state.openNoteId === note.id ? state.notes[note.id] : undefined;
+    if (current) updateNoteBody(current.id, appendConnection(current.body, title));
   }
 
   if (!mounted || !displayNote) return null;
@@ -436,9 +438,10 @@ export function NoteEditor() {
           <span className="connections-label">相关笔记</span>
           {outgoing.map((link) => (
             <button
-              key={link.title}
-              className={`connection-chip ${link.ghost ? "ghost" : ""}`}
-              onClick={() => void openOrCreateNoteByTitle(link.title)}
+              key={link.target}
+              title={link.target}
+              className={`connection-chip ${link.id ? "" : "ghost"}`}
+              onClick={() => void (link.id ? openNote(link.id) : openOrCreateNoteByTitle(link.target))}
             >
               {link.title}
             </button>
@@ -465,17 +468,27 @@ export function NoteEditor() {
         )}
       </div>
 
-      <NotePicker
-        open={pickerOpen}
-        onClose={() => setPickerOpen(false)}
-        onPick={(title) => {
-          // Ctrl+L / the toolbar button insert at the cursor; the
-          // connections strip's "+ Connect" appends to a trailing "Links"
-          // section instead. Both converge on the same `[[Title]]` syntax.
-          if (pickerMode === "connect") handleConnect(title);
-          else insertLinkAtCursor(title);
-        }}
-      />
+      {pickerOpen && note && (
+        <NotePicker
+          title={pickerMode === "connect" ? "关联笔记" : "插入笔记链接"}
+          onClose={() => setPickerOpen(false)}
+          onPick={picked => {
+            const resolve = createWikiLinkResolver(useStore.getState().noteList);
+            const path = picked.folder ? picked.folder + "/" + picked.title : picked.title;
+            const target = [picked.title, path, path + ".md"].find(candidate =>
+              candidate && !/[|\]\r\n]/.test(candidate) && resolve(candidate, note)?.id === picked.id,
+            );
+            if (!target) {
+              throw new Error("无法准确关联这篇笔记，请先为它设置可区分的标题。");
+            }
+            if (pickerMode === "connect") {
+              if (!outgoing.some(link => link.id === picked.id)) handleConnect(target);
+            } else {
+              insertLinkAtCursor(target);
+            }
+          }}
+        />
+      )}
     </div>
   );
 }
