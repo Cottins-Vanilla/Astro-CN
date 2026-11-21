@@ -34,11 +34,42 @@ describe("星图中的笔记改名",()=>{
   expect(disk.get("a")!.body).toBe("# 我的代码\n正文");
   expect(useStore.getState().openNoteId).toBe("a");
  });
- it("清空标题后保存为未命名，不产生空标题引用",async()=>{
-  useStore.getState().updateNoteTitle("a","  ");await useStore.getState().flushNoteSaves();
-  expect(disk.get("a")!.title).toBe("未命名");
-  expect(disk.get("b")!.body).toContain("[[Java/未命名]]");
-  expect((await loadLinkIndex()).nodes.some(n=>n.ghost)).toBe(false);
+
+ it("替换标题时的短暂空白不会在自动保存或刷新中覆盖原名", async () => {
+  const state = useStore.getState();
+  state.updateNoteTitle("a", "  ");
+  await vi.runAllTimersAsync();
+  await state.rescanVault();
+  expect(disk.get("a")?.title).toBe("原笔记");
+  expect(useStore.getState().notes.a.title).toBe("原笔记");
+  expect(disk.get("b")?.body).toContain("[[原笔记]]");
+
+  state.updateNoteTitle("a", "替换后的标题");
+  await state.flushNoteSaves();
+  expect(disk.get("a")).toMatchObject({ id: "a", title: "替换后的标题" });
+  expect(disk.get("b")?.body).toContain("[[Java/替换后的标题]]");
+ });
+
+ it("刷新读到旧快照时不会覆盖页面中已经保存的新标题", async () => {
+  const state = useStore.getState();
+  const old = [...disk.values()].map(({ body, ...meta }) => meta);
+  let releaseScan!: () => void;
+  const waitForScan = new Promise<void>(resolve => {
+   vi.mocked(vault.rescan).mockImplementationOnce(() => new Promise(done => {
+    releaseScan = () => done(old);
+    resolve();
+   }));
+  });
+  const refresh = state.rescanVault();
+  await waitForScan;
+  state.updateNoteTitle("a", "已经输入的新标题");
+  const saving = state.flushNoteSaves();
+  await vi.advanceTimersByTimeAsync(0);
+  releaseScan();
+  await Promise.all([refresh, saving]);
+  expect(useStore.getState().noteList.find(note => note.id === "a")?.title).toBe("已经输入的新标题");
+  expect(useStore.getState().notes.a.title).toBe("已经输入的新标题");
+  expect(disk.get("a")?.title).toBe("已经输入的新标题");
  });
  it("侧栏重命名同步未打开的反向引用，保留未保存的正文",async()=>{
   useStore.setState({notes:{a:useStore.getState().notes.a}});

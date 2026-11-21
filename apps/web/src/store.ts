@@ -415,9 +415,13 @@ export const useStore = create<AppState>((set, get) => {
   const pendingNoteRenames = new Map<string, Note>();
   // Renames also update referencing notes, so serialize note I/O across ids.
   let noteIoTask: Promise<void> = Promise.resolve();
-  function queueNoteTask(id: string, action: () => Promise<void>): Promise<void> {
+  function queueNoteIo(action: () => Promise<void>): Promise<void> {
     const task = noteIoTask.catch(() => {}).then(action);
     noteIoTask = task;
+    return task;
+  }
+  function queueNoteTask(id: string, action: () => Promise<void>): Promise<void> {
+    const task = queueNoteIo(action);
     noteTasks.set(id, task);
     const cleanup = () => { if (noteTasks.get(id) === task) noteTasks.delete(id); };
     void task.then(cleanup, cleanup);
@@ -450,20 +454,21 @@ export const useStore = create<AppState>((set, get) => {
     const disk = await Promise.all(metas.map(meta => vault.readNote(meta.id)));
     const liveNote = get().notes[id];
     if (!liveNote || deletingNotes.has(id)) return;
-    const latest = { ...liveNote, title: liveNote.title.trim() || "未命名" };
+    const latest = liveNote;
     const before = disk.map(note => {
       const live = get().notes[note.id] ?? note;
       const prior = pendingNoteRenames.get(note.id);
       return prior ? { ...live, title: prior.title } : live;
     });
     const rewrite = wikiLinksAfterRename(before, original, latest.title);
-    const changes = disk.map(note => {
-      const live = note.id === id ? latest : get().notes[note.id] ?? note;
+    const changes = disk.flatMap(note => {
+      const live = get().notes[note.id] ?? note;
       const body = rewrite(live);
-      return { previous: note, next: body === live.body ? live : {
+      if (note.id !== id && body === live.body) return [];
+      return [{ previous: note, next: body === live.body ? live : {
         ...live, body, tags: parseInlineTags(body), updatedAt: new Date().toISOString(),
-      } };
-    }).filter(({ previous, next }) => next.id === id || next.body !== previous.body || next.title !== previous.title);
+      } }];
+    });
     // A just-created note can still be absent from a stale listing.
     if (!changes.some(change => change.next.id === id)) changes.push({ previous: original, next: latest });
     const notes = { ...get().notes };
@@ -476,7 +481,9 @@ export const useStore = create<AppState>((set, get) => {
     try {
       for (const { previous, next } of changes) {
         written.push(previous);
-        await vault.writeNote(next);
+        // A backlink rewrite must not publish another note's pending title prematurely.
+        const persisted = next.id === id ? next : { ...next, title: previous.title };
+        await vault.writeNote(persisted);
       }
     } catch (error) {
       // Keep the last consistent disk version if any part of the multi-note save fails.
@@ -982,7 +989,8 @@ export const useStore = create<AppState>((set, get) => {
       if (deletingNotes.has(id)) return;
       const note = get().notes[id];
       if (!note) return;
-      if (note.title === title) return;
+      title = title.trim();
+      if (!title || note.title === title) return;
       if (!pendingNoteRenames.has(id)) pendingNoteRenames.set(id, note);
       const updatedAt = new Date().toISOString();
       set({
@@ -1007,7 +1015,7 @@ export const useStore = create<AppState>((set, get) => {
       vaultEvents.emit("note:updated", { id });
     },
 
-async renameNote(id, title) {
+    async renameNote(id, title) {
       const cleanTitle = title.trim();
       if (!cleanTitle) throw new Error("笔记名称不能为空。");
       const timer = noteSaveTimers.get(id);
@@ -1103,38 +1111,42 @@ async renameNote(id, title) {
       });
     },
 
-    async rescanVault() {
-      await noteIoTask.catch(() => {});
-      const fresh = await vault.rescan();
-      const freshById = new Map(fresh.map((n) => [n.id, n]));
-      const prevList = get().noteList;
+    rescanVault() {
+      // A filesystem snapshot must finish before a queued write can change the files it read.
+      return queueNoteIo(async () => {
+        const snapshotIds = new Set(get().noteList.map(note => note.id));
+        const fresh = await vault.rescan();
+        const freshIds = new Set(fresh.map(note => note.id));
+        const isPending = (id: string) =>
+          noteSaveTimers.has(id) || noteTasks.has(id) || pendingNoteRenames.has(id) || deletingNotes.has(id);
 
-      for (const prev of prevList) {
-        if (!freshById.has(prev.id)) await sweepAfterNoteRemoved(prev.id, prev.title);
-      }
-
-      // A note with a pending debounced save (scheduleNoteSave, up to SAVE_DEBOUNCE_MS out) has an
-      // in-memory edit disk hasn't seen yet — `fresh` just read the pre-flush, stale file. Adopting
-      // it here would both flicker the UI back to stale content AND, once the pending save fires
-      // moments later, overwrite the user's real edit on disk with that same staleness. The
-      // in-memory version stays authoritative for these ids until their own save lands.
-      const pendingIds = new Set([...noteSaveTimers.keys(), ...noteTasks.keys(), ...pendingNoteRenames.keys()]);
-
-      const prevById = new Map(get().noteList.map((n) => [n.id, n]));
-      const noteList = fresh.map((meta) => (pendingIds.has(meta.id) ? (prevById.get(meta.id) ?? meta) : meta));
-      set({ noteList });
-      for (const meta of fresh) {
-        if (pendingIds.has(meta.id)) continue;
-        const prev = prevById.get(meta.id);
-        if (prev && prev.title === meta.title && prev.folder === meta.folder && prev.updatedAt === meta.updatedAt) {
-          continue; // unchanged
+        for (const previous of get().noteList) {
+          if (snapshotIds.has(previous.id) && !freshIds.has(previous.id) && !isPending(previous.id)) {
+            await sweepAfterNoteRemoved(previous.id, previous.title);
+          }
         }
-        if (get().notes[meta.id]) {
-          const note = await vault.readNote(meta.id);
-          set({ notes: { ...get().notes, [meta.id]: note } });
+
+        const current = get().noteList;
+        const previousById = new Map(current.map(note => [note.id, note]));
+        const noteList = fresh.map(meta => isPending(meta.id) ? previousById.get(meta.id) ?? meta : meta);
+        // A just-created note may not have been included when the scan started.
+        for (const note of current) {
+          if (!freshIds.has(note.id)) noteList.push(note);
         }
-        vaultEvents.emit(prev ? "note:updated" : "note:created", { id: meta.id });
-      }
+        set({ noteList });
+        for (const meta of fresh) {
+          if (isPending(meta.id)) continue;
+          const previous = previousById.get(meta.id);
+          if (previous && previous.title === meta.title && previous.folder === meta.folder && previous.updatedAt === meta.updatedAt) continue;
+          const cached = get().notes[meta.id];
+          if (cached) {
+            const note = await vault.readNote(meta.id);
+            if (isPending(meta.id) || get().notes[meta.id] !== cached) continue;
+            set({ notes: { ...get().notes, [meta.id]: note } });
+          }
+          vaultEvents.emit(previous ? "note:updated" : "note:created", { id: meta.id });
+        }
+      });
     },
 
     async openOrCreateNoteByTitle(title) {

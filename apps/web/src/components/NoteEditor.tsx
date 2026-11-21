@@ -119,6 +119,12 @@ export function NoteEditor() {
   const hostRef = useRef<HTMLDivElement | null>(null);
   const viewRef = useRef<EditorView | null>(null);
   const titleInputRef = useRef<HTMLInputElement | null>(null);
+  const composingTitle = useRef(false);
+  const [titleDraft, setTitleDraft] = useState<{ id: string; value: string } | null>(null);
+  useEffect(() => {
+    composingTitle.current = false;
+    setTitleDraft(null);
+  }, [openNoteId]);
   const openNoteIdRef = useRef(openNoteId);
   openNoteIdRef.current = openNoteId;
 
@@ -346,9 +352,32 @@ export function NoteEditor() {
       <div className="dock-panel-header">
         <input
           ref={titleInputRef}
-          value={displayNote.title}
-          onChange={(e) => updateNoteTitle(displayNote.id, e.target.value)}
-          placeholder="未命名"
+          value={titleDraft?.id === displayNote.id ? titleDraft.value : displayNote.title}
+          onChange={(event) => {
+            const value = event.currentTarget.value;
+            setTitleDraft({ id: displayNote.id, value });
+            if (!composingTitle.current) updateNoteTitle(displayNote.id, value);
+          }}
+          onCompositionStart={() => { composingTitle.current = true; }}
+          onCompositionEnd={(event) => {
+            composingTitle.current = false;
+            const value = event.currentTarget.value;
+            setTitleDraft({ id: displayNote.id, value });
+            updateNoteTitle(displayNote.id, value);
+          }}
+          onBlur={() => {
+            composingTitle.current = false;
+            setTitleDraft(null);
+            void useStore.getState().flushNoteSaves().catch(error => console.error("笔记保存失败", error));
+          }}
+          onKeyDown={(event) => {
+            if (event.key === "Enter" && !composingTitle.current && !event.nativeEvent.isComposing) {
+              event.preventDefault();
+              event.currentTarget.blur();
+            }
+          }}
+          aria-label="笔记标题"
+          placeholder="输入笔记标题"
           className="flex-1 min-w-0 bg-transparent text-sm font-medium normal-case tracking-normal outline-none text-[var(--color-text)]"
           style={{ fontFamily: "var(--font-body)" }}
         />
