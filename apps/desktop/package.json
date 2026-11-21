@@ -1,6 +1,6 @@
 {
   "name": "@solen/desktop",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "private": true,
   "license": "MIT",
   "type": "module",
@@ -88,7 +88,7 @@
         "zh_CN"
       ],
       "language": "2052",
-      "artifactName": "Astro-CN-0.2.0-windows-x64-setup.${ext}",
+      "artifactName": "Astro-CN-0.2.1-windows-x64-setup.${ext}",
       "perMachine": false,
       "createDesktopShortcut": "always",
       "createStartMenuShortcut": true,

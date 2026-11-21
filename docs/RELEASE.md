@@ -4,12 +4,12 @@
 
 - GitHub 仓库：Cottins-Vanilla/Astro-CN
 - 可见性：公开
-- 版本标签：v0.2.0
-- Release 标题：Astro CN 0.2.0 · 中文增强版
+- 版本标签：v0.2.1
+- Release 标题：Astro CN 0.2.1 · 中文增强版
 - 源码分支：main
-- 安装包：Astro-CN-0.2.0-windows-x64-setup.exe
+- 安装包：Astro-CN-0.2.1-windows-x64-setup.exe
 - 校验文件：SHA256SUMS.txt
-- 可附加：Astro-CN-0.2.0-source.zip（GitHub 同时会生成标签源码归档）
+- 可附加：Astro-CN-0.2.1-source.zip（GitHub 同时会生成标签源码归档）
 
 ## 发布内容
 

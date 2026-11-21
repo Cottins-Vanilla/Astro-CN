@@ -40,7 +40,7 @@ pnpm build:windows
 
 产物位于 apps/desktop/release：
 
-- Astro-CN-0.2.0-windows-x64-setup.exe
+- Astro-CN-0.2.1-windows-x64-setup.exe
 - win-unpacked/：用于本地验证的完整应用目录。
 
 首次打包需要联网获取 Electron、NSIS 等官方构建组件。安装包使用简体中文向导、按用户安装，可选择安装位置，并提供快捷方式选项。不需要把 node_modules、dist 或 release 提交到源码仓库。
@@ -65,7 +65,7 @@ git show --stat HEAD
 git diff HEAD~1 HEAD
 ~~~
 
-根包和桌面包的 0.2.0 是社区发行版本；内部私有工作区包可以保留各自版本。上游 v0.1.1 的来源关系写在 docs/UPSTREAM.md 中。
+根包和桌面包的 0.2.1 是社区发行版本；内部私有工作区包可以保留各自版本。上游 v0.1.1 的来源关系写在 docs/UPSTREAM.md 中。
 
 ## 检查与发布
 
